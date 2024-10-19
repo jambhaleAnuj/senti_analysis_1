@@ -19,20 +19,41 @@
         <h1>Sentiment Analysis for {{ movie }}</h1>
       </div>
 
-      <div class="row">
-        <div class="col-md-6">
+      <div class="row mb-4">
+        <div class="col-md-12">
           <div class="card mb-4">
             <div class="card-body">
-              <h2 class="card-title">Review Sentiment Breakdown</h2>
-              <p>Total Reviews Analyzed: {{ total }}</p>
-              <ul>
-                <li>Positive Reviews: {{ positive }}</li>
-                <li>Neutral Reviews: {{ neutral }}</li>
-                <li>Negative Reviews: {{ negative }}</li>
-              </ul>
+              <h2 class="card-title">Movie Details</h2>
+              <p><strong>Year:</strong> {{ year }}</p>
+              <p><strong>Rated:</strong> {{ rating }}</p>
+              <p><strong>Genres:</strong> {{ genres }}</p>
+              <p><strong>Director:</strong> {{ director }}</p>
+              <!-- New field -->
+              <p><strong>Writer:</strong> {{ writer }}</p>
+              <!-- New field -->
+              <p><strong>Actors:</strong> {{ actors }}</p>
+              <!-- New field -->
+              <p><strong>Plot:</strong> {{ plot }}</p>
+              <!-- New field -->
+              <p><strong>Language:</strong> {{ language }}</p>
+              <!-- New field -->
+              <p><strong>Country:</strong> {{ country }}</p>
+              <!-- New field -->
+              <p><strong>Awards:</strong> {{ awards }}</p>
+              <!-- New field -->
+              <p><strong>Box Office:</strong> {{ box_office }}</p>
+               <!-- Movie Poster -->
+                {% if poster != 'N/A' %}
+                <img src="{{ poster }}" alt="{{ movie }} Poster" class="img-fluid" style="max-width: 100%; height: auto;"/>
+                {% else %}
+                <p>No poster available.</p>
+                {% endif %}
             </div>
           </div>
-
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
           <div class="card mb-4">
             <div class="card-body">
               <h2 class="card-title">Sentiment Distribution</h2>
@@ -40,6 +61,17 @@
                 src="/static/sentiment_pie.png"
                 class="img-fluid"
                 alt="Sentiment Distribution"
+              />
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Sentiment Count (Bar Chart)</h2>
+              <img
+                src="/static/sentiment_bar.png"
+                class="img-fluid"
+                alt="Sentiment Count"
               />
             </div>
           </div>
@@ -56,7 +88,35 @@
               />
             </div>
           </div>
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Polarity Distribution (Histogram)</h2>
+              <img
+                src="/static/sentiment_histogram.png"
+                class="img-fluid"
+                alt="Polarity Distribution"
+              />
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h2 class="card-title">Review Sentiment Breakdown</h2>
+              <p>Total Reviews Analyzed: {{ total }}</p>
+              <ul>
+                <li>Positive Reviews: {{ positive }}</li>
+                <li>Neutral Reviews: {{ neutral }}</li>
+                <li>Negative Reviews: {{ negative }}</li>
+              </ul>
+            </div>
+          </div>
+
+          
       </div>
 
       <a href="/" class="btn btn-primary btn-block">Analyze Another Movie</a>
