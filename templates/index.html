@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMDb Sentiment Analysis</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="jumbotron text-center">
+        <h1>IMDb Sentiment Analysis</h1>
+        <p>Enter an IMDb movie or TV show URL to generate sentiment analysis</p>
+      </div>
+
+      <div class="form-container">
+        <form method="POST" action="/">
+          <div class="form-group">
+            <label for="imdb_url">IMDb URL:</label>
+            <input
+              type="url"
+              class="form-control"
+              id="imdb_url"
+              name="imdb_url"
+              placeholder="Enter IMDb URL"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            Analyze Sentiment
+          </button>
+        </form>
+
+        {% if error %}
+        <div class="alert alert-danger mt-4">{{ error }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
