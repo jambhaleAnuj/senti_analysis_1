@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
-from imdb_scraper import fetch_movie_reviews_and_details
+from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations
 import json
 
@@ -7,6 +7,8 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    trending_movies = fetch_trending_movies()
+    print(trending_movies)
     if request.method == 'POST':
         movie_title = request.form['letterboxd_url']
         letterboxd_url = request.form['letterboxd_url']
@@ -21,7 +23,6 @@ def index():
             generate_word_cloud(reviews)
             create_visualizations(sentiments, polarity_scores, movie_details)
             
-            # Convert the list of tuples to a format that can be passed in URL
             positive_keywords_json = json.dumps(dict(positive_keywords))
             negative_keywords_json = json.dumps(dict(negative_keywords))
             
@@ -48,9 +49,9 @@ def index():
                                     negative_keywords=negative_keywords_json
                                    ))
         else:
-            return render_template('index.html', error="No reviews found for this Letterboxd URL.")
+            return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
     
-    return render_template('index.html')
+    return render_template('index.html', trending_movies=trending_movies)
 
 @app.route('/results')
 def results():
@@ -74,11 +75,9 @@ def results():
         total = int(request.args.get('total'))
         actors = request.args.get('actors')
         
-        # Parse the JSON strings back into dictionaries
         positive_keywords = json.loads(request.args.get('positive_keywords'))
         negative_keywords = json.loads(request.args.get('negative_keywords'))
         
-        # Convert dictionaries back to lists of tuples
         positive_keywords = [(word, count) for word, count in positive_keywords.items()]
         negative_keywords = [(word, count) for word, count in negative_keywords.items()]
 
@@ -104,7 +103,6 @@ def results():
                                positive_keywords=positive_keywords,
                                negative_keywords=negative_keywords)
     except Exception as e:
-        # Add error handling
         print(f"Error in results route: {str(e)}")
         return render_template('error.html', error=str(e))
 
