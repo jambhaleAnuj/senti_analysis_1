@@ -5,7 +5,7 @@
 - Download Python
 -  Unzip the project file
 -  Open CMD in the folder. i.e the at the location of the project folder
--  Now run  ``` pip install -r requirements.txt ```  
+-  Now run  ``` pip install requirements.txt ```  
 -  Once all the above steps are done. Run the following command
 -  ``` python app.py ```
 -  Now copy the IP address displayed and paste it in the terminal
