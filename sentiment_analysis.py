@@ -2,8 +2,15 @@ from textblob import TextBlob
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import seaborn as sns
+from collections import Counter
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import nltk
 
-# Analyze sentiment of the reviews using TextBlob and return detailed lists
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('punkt_tab')
+
 def analyze_sentiment(reviews):
     sentiments = {'positive': 0, 'neutral': 0, 'negative': 0}
     polarity_scores = []
@@ -24,7 +31,18 @@ def analyze_sentiment(reviews):
             sentiments['negative'] += 1
             negative_reviews.append(review)
     
-    return sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores
+    positive_keywords = extract_keywords(positive_reviews, 'positive')
+    negative_keywords = extract_keywords(negative_reviews, 'negative')
+    
+    return sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords
+
+def extract_keywords(reviews, sentiment):
+    stop_words = set(stopwords.words('english'))
+    words = []
+    for review in reviews:
+        tokens = word_tokenize(review.lower())
+        words.extend([word for word in tokens if word.isalnum() and word not in stop_words])
+    return Counter(words).most_common(10)
 
 # Generate a word cloud from reviews
 def generate_word_cloud(reviews):
