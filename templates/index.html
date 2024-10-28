@@ -23,15 +23,25 @@
       <div class="form-container">
         <form method="POST" action="/">
           <div class="form-group">
-            <label for="imdb_url">IMDb URL:</label>
+            <label for="imdb_url">Movie Title:</label>
             <input
-              type="url"
+              type="text"
               class="form-control"
-              id="imdb_url"
-              name="imdb_url"
-              placeholder="Enter IMDb URL"
+              id="letterboxd_url"
+              name="letterboxd_url"
+              placeholder="Enter Movie Title"
               required
             />
+            <!-- <label for="movie_title">Movie Title:</label>
+            <input type="text" name="movie_title" id="movie_title" required /> -->
+
+            <!-- <label for="letterboxd_url">Letterboxd URL:</label> -->
+            <!-- <input
+              type="text"
+              name="letterboxd_url"
+              id="letterboxd_url"
+              required
+            /> -->
           </div>
           <button type="submit" class="btn btn-primary btn-block">
             Analyze Sentiment

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
-from imdb_scraper import fetch_imdb_reviews
+from imdb_scraper import fetch_movie_reviews_and_details
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations
 
 app = Flask(__name__)
@@ -7,28 +7,32 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        imdb_url = request.form['imdb_url']
-        reviews, movie_details = fetch_imdb_reviews(imdb_url)
+        movie_title = request.form['letterboxd_url']
+        letterboxd_url = request.form['letterboxd_url']
+        letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+
+        letterboxd_urls = 'https://letterboxd.com/film/'+letterboxd_url
+        
+        reviews, movie_details = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
         
         if reviews:
             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores = analyze_sentiment(reviews)
             generate_word_cloud(reviews)
             create_visualizations(sentiments, polarity_scores, movie_details)
             
-            # Pass the sentiment data and categorized reviews to the results page
             return redirect(url_for('results', 
                                     movie=movie_details['title'],
                                     year=movie_details['year'],
                                     rating=movie_details['rating'],
                                     genres=movie_details['genres'],
-                                    plot = movie_details['plot'],
-                                    actors =  movie_details['actor'],
-                                    poster=movie_details['poster'],  # Add poster
-                                    language = movie_details['language'],
-                                    country = movie_details['country'],
-                                    writer = movie_details['writer'],
-                                    awards = movie_details['awards'],
-                                    director = movie_details['director'],
+                                    plot=movie_details['plot'],
+                                    actors=movie_details['actor'],
+                                    poster=movie_details['poster'],
+                                    language=movie_details['language'],
+                                    country=movie_details['country'],
+                                    writer=movie_details['writer'],
+                                    awards=movie_details['awards'],
+                                    director=movie_details['director'],
                                     box_office=movie_details['box_office'],
                                     release_date=movie_details['release_date'],
                                     positive=len(positive_reviews),
@@ -37,7 +41,7 @@ def index():
                                     total=len(reviews)
                                    ))
         else:
-            return render_template('index.html', error="No reviews found for this IMDb URL.")
+            return render_template('index.html', error="No reviews found for this Letterboxd URL.")
     
     return render_template('index.html')
 
