@@ -166,6 +166,26 @@
                         </div>
                     </div>
                 </div>
+                
+               <div class="similar-movies-section mt-5"></div>
+    <h3>Similar Movies You Might Like</h3>
+    <div class="row">
+        {% for movie in similar_movies %}
+        <div class="col-md-2 mb-4">
+            <div class="similar-movie-card">
+                <a href="{{ movie.url }}" target="_blank">
+                    {% if movie.poster %}
+                    <img src="{{ movie.poster }}" class="img-fluid rounded" alt="{{ movie.title }}">
+                    {% endif %}
+                    <div class="movie-info mt-2">
+                        <h5 class="movie-title">{{ movie.title }}</h5>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div> 
         </div>
         <div class="text-center mt-4">
           <a href="/" class="btn btn-primary btn-lg">Analyze Another Movie</a>

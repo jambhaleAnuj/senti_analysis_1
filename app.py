@@ -87,8 +87,9 @@ def index():
 
         letterboxd_urls = 'https://letterboxd.com/film/'+letterboxd_url
         
-        reviews, movie_details = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
+        reviews, movie_details,similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
         
+        print(similar_movies)
         if reviews:
             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
             generate_word_cloud(reviews)
@@ -117,7 +118,9 @@ def index():
                                     negative=len(negative_reviews),
                                     total=len(reviews),
                                     positive_keywords=positive_keywords_json,
-                                    negative_keywords=negative_keywords_json
+                                    negative_keywords=negative_keywords_json,
+                                    similar_movies=json.dumps(similar_movies)
+
                                    ))
         else:
             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
@@ -152,6 +155,9 @@ def results():
         positive_keywords = [(word, count) for word, count in positive_keywords.items()]
         negative_keywords = [(word, count) for word, count in negative_keywords.items()]
 
+        similar_movies = json.loads(request.args.get('similar_movies'))
+
+
         return render_template('results.html', 
                                movie=movie, 
                                plot=plot,
@@ -172,7 +178,8 @@ def results():
                                negative=negative, 
                                total=total,
                                positive_keywords=positive_keywords,
-                               negative_keywords=negative_keywords)
+                               negative_keywords=negative_keywords,
+                               similar_movies=similar_movies)
     except Exception as e:
         print(f"Error in results route: {str(e)}")
         return render_template('error.html', error=str(e))
