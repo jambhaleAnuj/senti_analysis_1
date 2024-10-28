@@ -5,6 +5,71 @@ import re
 # OMDb API Key
 OMDB_API_KEY = '36650a58'
 
+
+def fetch_similar_movies(letterboxd_url):
+    """
+    Fetch similar movies from Letterboxd and get their posters from OMDB
+    """
+    similar_movies = []
+    
+    try:
+        similar_url = f"{letterboxd_url}/similar"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(similar_url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        similar_grid = soup.find('ul', class_='poster-list')
+        if similar_grid:
+            movie_items = similar_grid.find_all('li', class_='poster-container')
+            
+            for item in movie_items[:6]:
+                try:
+                    film_poster = item.find('div', class_='film-poster')
+                    if film_poster:
+                        movie_title = film_poster.find('img')['alt']
+                        movie_url = film_poster['data-target-link']
+                        
+                        # Get movie year from the URL if available
+                        year = ''
+                        if '-' in movie_url:
+                            try:
+                                year = movie_url.split('-')[-1]
+                                if year.isdigit() and len(year) == 4:
+                                    year = f"&y={year}"
+                                else:
+                                    year = ''
+                            except:
+                                year = ''
+                        
+                        # Fetch poster from OMDB API
+                        omdb_url = f"http://www.omdbapi.com/?t={movie_title}{year}&apikey={OMDB_API_KEY}"
+                        omdb_response = requests.get(omdb_url)
+                        omdb_data = omdb_response.json()
+                        
+                        poster_url = omdb_data.get('Poster', 'N/A')
+                        if poster_url == 'N/A':
+                            # Use a default poster if OMDB doesn't have one
+                            poster_url = "path/to/default/poster.jpg"
+                        
+                        similar_movies.append({
+                            'title': movie_title,
+                            'url': f"https://letterboxd.com{movie_url}",
+                            'poster': poster_url,
+                            'year': year.replace('&y=', '') if year else 'N/A'
+                        })
+                        
+                except Exception as e:
+                    print(f"Error processing similar movie: {e}")
+                    continue
+                    
+    except Exception as e:
+        print(f"Error fetching similar movies: {e}")
+    
+    return similar_movies
+
 def fetch_trending_movies():
     url = 'https://letterboxd.com/films/ajax/popular/size/large/'
     headers = {
@@ -111,6 +176,8 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     # Fetch reviews from Letterboxd
     review_texts = fetch_letterboxd_reviews(letterboxd_url)
 
+    similar_movies = fetch_similar_movies(letterboxd_url)
+
     # Organize movie details
     movie_details = {
         'title': omdb_data.get('Title', 'N/A'),
@@ -129,4 +196,4 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
         'writer': omdb_data.get('Writer', 'N/A')
     }
 
-    return review_texts, movie_details
+    return review_texts, movie_details, similar_movies

@@ -133,6 +133,42 @@ input[type="text"] {
     border-width: 0;
 }
 
+.similar-movies-section {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.similar-movie-card {
+    transition: transform 0.2s;
+}
+
+.similar-movie-card:hover {
+    transform: scale(1.05);
+}
+
+.similar-movie-card img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.movie-info {
+    text-align: center;
+}
+
+.movie-title {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    color: white;
+}
+
+.movie-year {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0;
+}
+
 @media (max-width: 768px) {
     .results-grid {
         grid-template-columns: 1fr;
