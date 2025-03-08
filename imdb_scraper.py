@@ -158,7 +158,9 @@ def fetch_letterboxd_reviews(letterboxd_url):
         return []
     
     season_page = BeautifulSoup(response.content, 'html.parser')
-    reviews = season_page.find_all('div', class_='body-text -prose collapsible-text')
+    
+    # Update this to match the correct class name for review text
+    reviews = season_page.find_all('div', class_='body-text -prose js-review-body js-collapsible-text')
     
     review_texts = []
     for review in reviews:
@@ -167,14 +169,17 @@ def fetch_letterboxd_reviews(letterboxd_url):
     
     return review_texts
 
+
 def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     
     """Combines OMDb movie details with Letterboxd reviews."""
     # Fetch movie details from OMDb
     omdb_data = get_omdb_data(movie_title)
-    
+    print(omdb_data)
+
     # Fetch reviews from Letterboxd
     review_texts = fetch_letterboxd_reviews(letterboxd_url)
+    print(review_texts)
 
     similar_movies = fetch_similar_movies(letterboxd_url)
 
