@@ -47,6 +47,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -64,7 +65,9 @@
                 name="letterboxd_url"
                 placeholder="Enter Movie Title"
                 required
+                list="movie-suggestions"
               />
+              <datalist id="movie-suggestions"></datalist>
             </div>
             <button type="submit" class="btn btn-primary btn-block">
               Analyze Sentiment
@@ -112,5 +115,30 @@
         </div>
       </main>
     </div>
+
+    <script>
+      $(document).ready(function () {
+        // Event listener for user input
+        $("#letterboxd_url").on("input", function () {
+          let query = $(this).val();
+          if (query.length > 2) {
+            // Trigger suggestions when at least 3 characters are typed
+            $.ajax({
+              url: "/get_movie_suggestions", // Backend endpoint for fetching suggestions
+              data: { query: query }, // Send the query string
+              success: function (data) {
+                // Populate the datalist with suggestions
+                $("#movie-suggestions").empty();
+                data.suggestions.forEach(function (movie) {
+                  $("#movie-suggestions").append(
+                    `<option value="${movie.title}">`
+                  );
+                });
+              },
+            });
+          }
+        });
+      });
+    </script>
   </body>
 </html>
