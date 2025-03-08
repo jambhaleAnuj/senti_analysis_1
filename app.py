@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for
 from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations
 import json
+from flask import jsonify
+
+
+import requests
 
 app = Flask(__name__)
 
@@ -183,6 +187,32 @@ def results():
     except Exception as e:
         print(f"Error in results route: {str(e)}")
         return render_template('error.html', error=str(e))
+
+
+OMDB_API_KEY = '36650a58'
+
+
+@app.route('/get_movie_suggestions', methods=['GET'])
+def get_movie_suggestions():
+    query = request.args.get('query', '').strip()
+    
+    # If the query is less than 3 characters, don't make an API call
+    if len(query) < 3:
+        return jsonify(suggestions=[])
+
+    # Fetch suggestions from OMDb API
+    omdb_url = f"http://www.omdbapi.com/?s={query}&apikey={OMDB_API_KEY}"
+    response = requests.get(omdb_url)
+    
+    # If the response is OK and there are search results
+    if response.status_code == 200:
+        data = response.json()
+        if data.get('Response') == 'True':
+            # Extract movie titles and return them as suggestions
+            suggestions = [{'title': movie['Title']} for movie in data.get('Search', [])]
+            return jsonify(suggestions=suggestions)
+    
+    return jsonify(suggestions=[])
 
 if __name__ == '__main__':
     app.run(debug=True)
