@@ -8,6 +8,8 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
@@ -81,30 +83,39 @@
             </div>
           </div>
         </div>
+
+        <!-- Interactive Sentiment Distribution Chart -->
         <div class="row">
           <div class="col-md-6">
             <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Sentiment Distribution</h2>
-                <img
-                  src="/static/sentiment_pie.png"
-                  class="img-fluid"
-                  alt="Sentiment Distribution"
-                />
+                <div id="pie-chart"></div>
+                <script>
+                  var pieData = {{ pie_chart | tojson }};
+                  const piObj = JSON.parse(pieData);
+                  Plotly.newPlot('pie-chart', piObj.data, piObj.layout);
+                </script>
               </div>
             </div>
+
+            <!-- Interactive Sentiment Count (Bar Chart) -->
             <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Sentiment Count (Bar Chart)</h2>
-                <img
-                  src="/static/sentiment_bar.png"
-                  class="img-fluid"
-                  alt="Sentiment Count"
-                />
+                <div id="bar-chart"></div>
+                <script>
+                                    var barData = {{ bar_chart | tojson }};
+                  const barObj = JSON.parse(barData);
+
+                                    Plotly.newPlot('bar-chart', barObj.data, barObj.layout);
+                </script>
               </div>
             </div>
           </div>
+
           <div class="col-md-6">
+            <!-- Word Cloud (still static image) -->
             <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Word Cloud</h2>
@@ -115,18 +126,25 @@
                 />
               </div>
             </div>
+
+            <!-- Interactive Polarity Distribution (Histogram) -->
             <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Polarity Distribution (Histogram)</h2>
-                <img
-                  src="/static/sentiment_histogram.png"
-                  class="img-fluid"
-                  alt="Polarity Distribution"
-                />
+                <div id="hist-chart"></div>
+                <script>
+                                                                    var histData = {{ hist_chart | tojson }};
+                                    const histObj = JSON.parse(histData);
+                  console.log(histObj.data)
+                  console.log(histData)
+                                                      Plotly.react('hist-chart', histObj.data, histObj.layout);
+                </script>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Sentiment Breakdown -->
         <div class="row">
           <div class="col-md-6">
             <div class="card mb-4">
@@ -141,57 +159,69 @@
               </div>
             </div>
           </div>
-          <div class="col-md-6"></div>
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h2 class="card-title h4">Key Words</h2>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h3 class="h5">Positive</h3>
-                                    <ul class="list-unstyled">
-                                        {% for word, count in positive_keywords %}
-                                        <li>{{ word }}: {{ count }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h3 class="h5">Negative</h3>
-                                    <ul class="list-unstyled">
-                                        {% for word, count in negative_keywords %}
-                                        <li>{{ word }}: {{ count }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
+          <!-- Key Words Section -->
+          <div class="col-md-6">
+            <div class="card mb-4">
+              <div class="card-body">
+                <h2 class="card-title h4">Key Words</h2>
+                <div class="row">
+                  <div class="col-md-6">
+                    <h3 class="h5">Positive</h3>
+                    <ul class="list-unstyled">
+                      {% for word, count in positive_keywords %}
+                      <li>{{ word }}: {{ count }}</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  <div class="col-md-6">
+                    <h3 class="h5">Negative</h3>
+                    <ul class="list-unstyled">
+                      {% for word, count in negative_keywords %}
+                      <li>{{ word }}: {{ count }}</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
                 </div>
-                
-               <div class="similar-movies-section mt-5"></div>
-    <h3>Similar Movies You Might Like</h3>
-    <div class="row">
-        {% for movie in similar_movies %}
-        <div class="col-md-2 mb-4">
-            <div class="similar-movie-card">
-                <a href="{{ movie.url }}" target="_blank">
-                    {% if movie.poster %}
-                    <img src="{{ movie.poster }}" class="img-fluid rounded" alt="{{ movie.title }}">
-                    {% endif %}
-                    <div class="movie-info mt-2">
-                        <h5 class="movie-title">{{ movie.title }}</h5>
-                    </div>
-                </a>
+              </div>
             </div>
+          </div>
         </div>
-        {% endfor %}
-    </div>
-</div> 
-        </div>
-        <div class="text-center mt-4">
-          <a href="/" class="btn btn-primary btn-lg">Analyze Another Movie</a>
+
+        <!-- Similar Movies Section -->
+        <div class="similar-movies-section mt-5">
+          <h3>Similar Movies You Might Like</h3>
+          <div class="row">
+            {% for movie in similar_movies %}
+            <div class="col-md-2 mb-4">
+              <div class="similar-movie-card">
+                <a href="{{ movie.url }}" target="_blank">
+                  {% if movie.poster %}
+                  <img
+                    src="{{ movie.poster }}"
+                    class="img-fluid rounded"
+                    alt="{{ movie.title }}"
+                  />
+                  {% endif %}
+                  <div class="movie-info mt-2">
+                    <h5 class="movie-title">{{ movie.title }}</h5>
+                  </div>
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
         </div>
       </main>
+
+      <!-- Footer -->
+      <div class="text-center mt-4">
+        <a href="/" class="btn btn-primary btn-lg">Analyze Another Movie</a>
+      </div>
     </div>
+
+    <!-- Include Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

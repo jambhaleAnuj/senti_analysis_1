@@ -1,3 +1,6 @@
+import json
+from plotly.utils import PlotlyJSONEncoder
+import plotly.io as pio
 from flask import Flask, render_template, request, redirect, url_for
 from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations
@@ -131,6 +134,7 @@ def index():
     
     return render_template('index.html', trending_movies=trending_movies)
 
+
 @app.route('/results')
 def results():
     try:
@@ -152,16 +156,26 @@ def results():
         negative = int(request.args.get('negative'))
         total = int(request.args.get('total'))
         actors = request.args.get('actors')
-        
+
         positive_keywords = json.loads(request.args.get('positive_keywords'))
         negative_keywords = json.loads(request.args.get('negative_keywords'))
-        
+
         positive_keywords = [(word, count) for word, count in positive_keywords.items()]
         negative_keywords = [(word, count) for word, count in negative_keywords.items()]
 
         similar_movies = json.loads(request.args.get('similar_movies'))
 
-
+        # Get visualizations
+        fig_pie, fig_bar, fig_hist = create_visualizations(
+            {'positive': positive, 'neutral': neutral, 'negative': negative}, 
+            [positive, neutral, negative],  # Example polarity scores
+            {'title': movie}
+        )
+        
+        pie_json = json.dumps(fig_pie, cls=PlotlyJSONEncoder)
+        bar_json = json.dumps(fig_bar, cls=PlotlyJSONEncoder)
+        hist_json = json.dumps(fig_hist, cls=PlotlyJSONEncoder)
+        
         return render_template('results.html', 
                                movie=movie, 
                                plot=plot,
@@ -183,10 +197,14 @@ def results():
                                total=total,
                                positive_keywords=positive_keywords,
                                negative_keywords=negative_keywords,
-                               similar_movies=similar_movies)
+                               similar_movies=similar_movies,
+                               pie_chart=pie_json,
+                               bar_chart=bar_json,
+                               hist_chart=hist_json)
     except Exception as e:
         print(f"Error in results route: {str(e)}")
         return render_template('error.html', error=str(e))
+
 
 
 OMDB_API_KEY = '36650a58'
