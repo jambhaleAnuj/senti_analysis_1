@@ -3,7 +3,7 @@ from plotly.utils import PlotlyJSONEncoder
 import plotly.io as pio
 from flask import Flask, render_template, request, redirect, url_for
 from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
-from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations
+from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations,plot_word_frequency,plot_genre_distribution
 import json
 from flask import jsonify
 
@@ -101,10 +101,11 @@ def index():
             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
             generate_word_cloud(reviews)
             create_visualizations(sentiments, polarity_scores, movie_details)
+           
             
             positive_keywords_json = json.dumps(dict(positive_keywords))
             negative_keywords_json = json.dumps(dict(negative_keywords))
-            
+            reviews_json = json.dumps(reviews)
             return redirect(url_for('results', 
                                     movie=movie_details['title'],
                                     year=movie_details['year'],
@@ -124,6 +125,7 @@ def index():
                                     neutral=len(neutral_reviews),
                                     negative=len(negative_reviews),
                                     total=len(reviews),
+                                    rev = reviews_json,
                                     positive_keywords=positive_keywords_json,
                                     negative_keywords=negative_keywords_json,
                                     similar_movies=json.dumps(similar_movies)
@@ -151,6 +153,7 @@ def results():
         genres = request.args.get('genres')
         box_office = request.args.get('box_office')
         release_date = request.args.get('release_date')
+        
         positive = int(request.args.get('positive'))
         neutral = int(request.args.get('neutral'))
         negative = int(request.args.get('negative'))
@@ -165,6 +168,30 @@ def results():
 
         similar_movies = json.loads(request.args.get('similar_movies'))
 
+         # Generate word frequency plot
+        # reviews = request.args.get('rev').split(';')  # You should pass the reviews as a string
+        reviews = json.loads(request.args.get('rev'))
+        sentiment = request.args.get('sentiment')  # Pass the sentiment (positive, negative, etc.)
+
+        print(".....")
+        print(genres)
+
+
+        #Genre Distribution
+        plt_genre = plot_genre_distribution(genres)
+        print(plt_genre)
+
+        genre_fig = plot_genre_distribution(genres)
+    
+    # Convert the Plotly figure to JSON to pass to the frontend
+        genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder)
+
+
+        # Create the word frequency plot
+        word_freq_plot_html = plot_word_frequency(reviews, sentiment,{'title':movie})
+        word_freq_plot_json = json.dumps(word_freq_plot_html,cls=PlotlyJSONEncoder)
+
+       
         # Get visualizations
         fig_pie, fig_bar, fig_hist = create_visualizations(
             {'positive': positive, 'neutral': neutral, 'negative': negative}, 
@@ -200,7 +227,10 @@ def results():
                                similar_movies=similar_movies,
                                pie_chart=pie_json,
                                bar_chart=bar_json,
-                               hist_chart=hist_json)
+                               hist_chart=hist_json,
+                               word_freq_plot=word_freq_plot_json,
+                               genre_plot_json=genre_plot_json)
+
     except Exception as e:
         print(f"Error in results route: {str(e)}")
         return render_template('error.html', error=str(e))
@@ -229,7 +259,7 @@ def get_movie_suggestions():
             # Extract movie titles and return them as suggestions
             suggestions = [{'title': movie['Title']} for movie in data.get('Search', [])]
             return jsonify(suggestions=suggestions)
-    
+        
     return jsonify(suggestions=[])
 
 if __name__ == '__main__':

@@ -133,14 +133,44 @@
                 <h2 class="card-title h4">Polarity Distribution (Histogram)</h2>
                 <div id="hist-chart"></div>
                 <script>
-                                                                    var histData = {{ hist_chart | tojson }};
-                                    const histObj = JSON.parse(histData);
-                  console.log(histObj.data)
-                  console.log(histData)
-                                                      Plotly.react('hist-chart', histObj.data, histObj.layout);
+                                                  var histData = {{ hist_chart | tojson }};
+                  const histObj = JSON.parse(histData);
+
+                                    Plotly.react('hist-chart', histObj.data, histObj.layout);
                 </script>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-body">
+            <h2 class="card-title h4">
+              Word Frequency in {{ sentiment }} Reviews
+            </h2>
+            <div id="word-frequency-bar-chart"></div>
+            <!-- Changed ID -->
+            <script>
+              var freq = {{ word_freq_plot|safe }};
+              // const freqObj = JSON.parse(freq)
+              console.log(".........")
+              console.log(freq)
+              Plotly.react('word-frequency-bar-chart', freq.data, freq.layout);
+            </script>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <h2>Genre Distribution</h2>
+            <div id="genre-plot"></div>
+
+            <script>
+              // Parse the genre plot data from the backend
+              var genrePlotData = {{ genre_plot_json | safe }};
+
+              // Use Plotly to render the genre distribution plot
+              Plotly.newPlot('genre-plot', genrePlotData.data, genrePlotData.layout);
+            </script>
           </div>
         </div>
 
