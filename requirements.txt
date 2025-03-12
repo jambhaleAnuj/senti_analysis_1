@@ -7,3 +7,5 @@ seaborn
 wordcloud
 IMDbPY
 plotly
+better_profanity
+spacy
