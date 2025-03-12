@@ -6,4 +6,4 @@ matplotlib
 seaborn
 wordcloud
 IMDbPY
-
+plotly
