@@ -16,24 +16,24 @@
       .trending-movie:hover {
         transform: scale(1.05);
       }
-      .movie-poster {
+      .index-movie-poster {
         width: 100%;
-        height: auto;
+        height: 400px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
-      .movie-title {
+      .index-movie-title {
         margin-top: 8px;
         font-size: 14px;
         text-align: center;
-        color: #333;
+        color: white;
       }
       .trending-section {
         margin-top: 40px;
       }
       .trending-header {
         margin-bottom: 20px;
-        color: #333;
+        color: #fff;
         text-align: center;
       }
       .movie-link {
@@ -79,7 +79,7 @@
           {% endif %}
 
           <div class="trending-section">
-            <h2 class="trending-header">Top Rated Movies</h2>
+            <h2 class="trending-header">Top Movies This Week</h2>
             <div class="row">
               {% for movie in trending_movies %}
               <div class="col-6 col-md-3">
@@ -102,9 +102,9 @@
                       <img
                         src="{{ movie.image }}"
                         alt="{{ movie.title }}"
-                        class="movie-poster"
+                        class="index-movie-poster"
                       />
-                      <p class="movie-title">{{ movie.title }}</p>
+                      <p class="index-movie-title">{{ movie.title }}</p>
                     </a>
                   </form>
                 </div>
