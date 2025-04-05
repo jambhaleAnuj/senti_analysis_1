@@ -154,3 +154,70 @@ Plotly graphs come with several interactive icons and controls that make them ea
   - When enabled, autoscale dynamically adjusts the axis limits (both x and y axes) based on the data being displayed, ensuring that all data points fit within the chart without clipping or distortion.
 
   - This is particularly useful when the data range is changing or unknown, as it helps the graph adapt to varying data sets, making the visualization easier to interpret.
+
+
+
+
+## How Keywords in positive and negative movies are calculated. How the alogrithm works. And why sometimes it gives non sensical words.
+
+The keywords in positive and negative movie reviews are calculated based on the words that appear most frequently in the reviews, with a few processing steps to filter out non-informative or irrelevant words. Here’s a breakdown of how the algorithm works and why it might sometimes generate non-sensical words:
+
+### Steps for Calculating Keywords:
+Text Cleaning:
+
+Before processing the reviews, stop words (common words like "the", "and", etc.) are removed using the NLTK stopwords list. This ensures that the focus remains on significant words.
+
+Tokenization:
+
+Each review is split into individual words (tokens) using NLTK’s word_tokenize() function. This breaks down the text into manageable units, such as words and punctuation.
+
+Lowercasing:
+
+All words are converted to lowercase to ensure uniformity (e.g., "Great" and "great" are treated as the same word).
+
+Filtering Alphanumeric Words:
+
+The algorithm filters out non-alphanumeric tokens (e.g., punctuation marks, numbers), so only meaningful words are processed.
+
+Word Frequency Calculation:
+
+After tokenizing and filtering the words, the algorithm calculates how often each word appears across the reviews using Counter from Python’s collections module. This gives a frequency distribution of words.
+
+Extracting the Most Common Words:
+
+The algorithm then extracts the 10 most frequent words (the most common ones) from the positive and negative reviews separately.
+
+Categorizing by Sentiment:
+
+The words that occur most often in the positive reviews are considered the "positive keywords," while those in negative reviews are considered the "negative keywords." These keywords are essentially the words that appear most frequently in the sentiment-labeled reviews.
+
+Displaying Results:
+
+The 10 most frequent words (or "keywords") are displayed as the final output for both positive and negative sentiment reviews.
+
+### Why Sometimes Non-Sensical Words Are Generated:
+The algorithm relies heavily on frequency counting, but this method has some limitations that can cause nonsensical words to appear as keywords. Here are the main reasons why:
+
+Irrelevant Words in the Dataset:
+
+If a movie review contains many repeated informal words, exclamations, or typos, these may become frequent tokens even though they don’t add value to the sentiment analysis. For instance, words like "wow" or "yay" might be flagged as positive keywords, but they are not necessarily informative.
+
+Handling of Named Entities:
+
+If the named entities (such as character names, places, or movie titles) are not handled correctly, they may be included in the final keyword list. For instance, a review may mention a movie title repeatedly, and the algorithm might incorrectly treat the title as a significant keyword.
+
+Lack of Contextual Filtering:
+
+The algorithm does not use any advanced semantic understanding or context to filter out irrelevant terms. For example, words like "love" or "great" are often frequent, but in some cases, they might be used sarcastically or in a neutral context, leading to skewed results.
+
+Tokenization Issues:
+
+Tokenization can sometimes cause problems when reviews contain non-standard characters, abbreviations, or combined words. For example, "can't" might get tokenized as "ca" and "n't," leading to odd frequency counts.
+
+Absence of Fine-Grained NLP Techniques:
+
+The algorithm doesn’t use part-of-speech tagging to better understand the role of words in sentences. As a result, frequent adjectives or verbs might appear as keywords even when they don’t contribute much to the sentiment.
+
+Overlooking Phrase Structure:
+
+The algorithm looks at single words rather than phrases or bigrams/trigrams, meaning that it might miss context-rich phrases that could better represent the sentiment (e.g., "highly recommend" might be more informative than just "recommend").
