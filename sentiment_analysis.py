@@ -163,7 +163,7 @@ def plot_word_frequency(reviews, sentiment, movie_details):
     words, counts = zip(*most_common)
     
     # Create a bar plot using Plotly
-    fig = px.bar(x=words, y=counts, labels={'x': 'Words', 'y': 'Frequency'}, title=f'Most Common Words in {movie_details['title']} Reviews')
+    fig = px.bar(x=words, y=counts, labels={'x': 'Words', 'y': 'Frequency'}, title=f'Most Common Words in {movie_details["title"]} Reviews')
     return fig
 
 
