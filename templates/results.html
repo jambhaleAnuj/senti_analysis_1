@@ -225,18 +225,26 @@
             {% for movie in similar_movies %}
             <div class="col-md-2 mb-4">
               <div class="similar-movie-card">
-                <a href="{{ movie.url }}" target="_blank">
-                  {% if movie.poster %}
-                  <img
-                    src="{{ movie.poster }}"
-                    class="img-fluid rounded"
-                    alt="{{ movie.title }}"
+                <!-- Form submission for similar movie -->
+                <form action="{{ url_for('index') }}" method="POST">
+                  <input
+                    type="hidden"
+                    name="letterboxd_url"
+                    value="{{ movie.title }}"
                   />
-                  {% endif %}
-                  <div class="movie-info mt-2">
-                    <h5 class="movie-title">{{ movie.title }}</h5>
-                  </div>
-                </a>
+                  <button type="submit">
+                    {% if movie.poster %}
+                    <img
+                      src="{{ movie.poster }}"
+                      class="img-fluid rounded"
+                      alt="{{ movie.title }}"
+                    />
+                    {% endif %}
+                    <div class="movie-info mt-2">
+                      <h5 class="movie-title">{{ movie.title }}</h5>
+                    </div>
+                  </button>
+                </form>
               </div>
             </div>
             {% endfor %}

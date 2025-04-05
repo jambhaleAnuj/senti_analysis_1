@@ -76,65 +76,427 @@ FALLBACK_TRENDING = [
     # Add more fallback movies as needed
 ]
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    trending_movies = fetch_trending_movies()
-    print(trending_movies)
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     trending_movies = fetch_trending_movies()
+#     print(trending_movies)
 
   
         
+#     if not trending_movies:
+#         print("Both methods failed, using fallback data")
+#         trending_movies = FALLBACK_TRENDING
+
+#     if request.method == 'POST':
+#         movie_title = request.form['letterboxd_url']
+#         letterboxd_url = request.form['letterboxd_url']
+#         letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+
+#         letterboxd_urls = 'https://letterboxd.com/film/'+letterboxd_url
+        
+#         reviews, movie_details,similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
+        
+#         print(similar_movies)
+#         if reviews:
+#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+#             generate_word_cloud(reviews)
+#             create_visualizations(sentiments, polarity_scores, movie_details)
+           
+            
+#             positive_keywords_json = json.dumps(dict(positive_keywords))
+#             negative_keywords_json = json.dumps(dict(negative_keywords))
+#             reviews_json = json.dumps(reviews)
+#             return redirect(url_for('results', 
+#                                     movie=movie_details['title'],
+#                                     year=movie_details['year'],
+#                                     rating=movie_details['rating'],
+#                                     genres=movie_details['genres'],
+#                                     plot=movie_details['plot'],
+#                                     actors=movie_details['actor'],
+#                                     poster=movie_details['poster'],
+#                                     language=movie_details['language'],
+#                                     country=movie_details['country'],
+#                                     writer=movie_details['writer'],
+#                                     awards=movie_details['awards'],
+#                                     director=movie_details['director'],
+#                                     box_office=movie_details['box_office'],
+#                                     release_date=movie_details['release_date'],
+#                                     positive=len(positive_reviews),
+#                                     neutral=len(neutral_reviews),
+#                                     negative=len(negative_reviews),
+#                                     total=len(reviews),
+#                                     rev = reviews_json,
+#                                     positive_keywords=positive_keywords_json,
+#                                     negative_keywords=negative_keywords_json,
+#                                     similar_movies=json.dumps(similar_movies)
+
+#                                    ))
+#         else:
+#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+    
+    
+#     else:
+#         # Handle the case when coming from a similar movie link
+#         letterboxd_url = request.args.get('letterboxd_url')
+#         if letterboxd_url:
+#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+#             letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
+            
+#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_urls)
+            
+    
+#     return render_template('index.html', trending_movies=trending_movies)
+
+
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     trending_movies = fetch_trending_movies()
+#     print(trending_movies)
+
+#     if not trending_movies:
+#         print("Both methods failed, using fallback data")
+#         trending_movies = FALLBACK_TRENDING
+
+#     if request.method == 'POST':
+#         # For movie search via letterboxd URL
+#         movie_title = request.form['letterboxd_url']
+#         letterboxd_url = request.form['letterboxd_url']
+#         letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+#         letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
+        
+#         reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
+
+#         print(similar_movies)
+#         if reviews:
+#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+#             generate_word_cloud(reviews)
+#             create_visualizations(sentiments, polarity_scores, movie_details)
+
+#             positive_keywords_json = json.dumps(dict(positive_keywords))
+#             negative_keywords_json = json.dumps(dict(negative_keywords))
+#             reviews_json = json.dumps(reviews)
+
+#             return redirect(url_for('results', 
+#                                     movie=movie_details['title'],
+#                                     year=movie_details['year'],
+#                                     rating=movie_details['rating'],
+#                                     genres=movie_details['genres'],
+#                                     plot=movie_details['plot'],
+#                                     actors=movie_details['actor'],
+#                                     poster=movie_details['poster'],
+#                                     language=movie_details['language'],
+#                                     country=movie_details['country'],
+#                                     writer=movie_details['writer'],
+#                                     awards=movie_details['awards'],
+#                                     director=movie_details['director'],
+#                                     box_office=movie_details['box_office'],
+#                                     release_date=movie_details['release_date'],
+#                                     positive=len(positive_reviews),
+#                                     neutral=len(neutral_reviews),
+#                                     negative=len(negative_reviews),
+#                                     total=len(reviews),
+#                                     rev=reviews_json,
+#                                     positive_keywords=positive_keywords_json,
+#                                     negative_keywords=negative_keywords_json,
+#                                     similar_movies=json.dumps(similar_movies)
+#                                    ))
+#         else:
+#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+
+#     else:
+#         # Handle the case when coming from a similar movie link (GET request)
+#         letterboxd_url = request.args.get('letterboxd_url')
+#         if letterboxd_url:
+#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+#             letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
+            
+#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_urls)
+
+#             if reviews:
+#                 sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+#                 generate_word_cloud(reviews)
+#                 create_visualizations(sentiments, polarity_scores, movie_details)
+
+#                 positive_keywords_json = json.dumps(dict(positive_keywords))
+#                 negative_keywords_json = json.dumps(dict(negative_keywords))
+#                 reviews_json = json.dumps(reviews)
+
+#                 return redirect(url_for('results', 
+#                                         movie=movie_details['title'],
+#                                         year=movie_details['year'],
+#                                         rating=movie_details['rating'],
+#                                         genres=movie_details['genres'],
+#                                         plot=movie_details['plot'],
+#                                         actors=movie_details['actor'],
+#                                         poster=movie_details['poster'],
+#                                         language=movie_details['language'],
+#                                         country=movie_details['country'],
+#                                         writer=movie_details['writer'],
+#                                         awards=movie_details['awards'],
+#                                         director=movie_details['director'],
+#                                         box_office=movie_details['box_office'],
+#                                         release_date=movie_details['release_date'],
+#                                         positive=len(positive_reviews),
+#                                         neutral=len(neutral_reviews),
+#                                         negative=len(negative_reviews),
+#                                         total=len(reviews),
+#                                         rev=reviews_json,
+#                                         positive_keywords=positive_keywords_json,
+#                                         negative_keywords=negative_keywords_json,
+#                                         similar_movies=json.dumps(similar_movies)
+#                                        ))
+#             else:
+#                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+        
+#     return render_template('index.html', trending_movies=trending_movies)
+
+
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     # Fetch the trending movies
+#     trending_movies = fetch_trending_movies()
+
+#     if not trending_movies:
+#         trending_movies = FALLBACK_TRENDING
+
+#     if request.method == 'POST':
+#         # Handle search request from the form
+#         movie_title = request.form['letterboxd_url']
+#         letterboxd_url = movie_title.replace(' ', '-').lower()
+
+#         # Construct the full URL for the movie (search case)
+#         letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
+
+#         # Fetch reviews and details for the searched movie
+#         reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_full_url)
+
+#         # Ensure each similar movie has the full URL
+#         for movie in similar_movies:
+#             movie['url'] = f'https://letterboxd.com/film/{letterboxd_url}/'
+
+#         if reviews:
+#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+#             generate_word_cloud(reviews)
+#             create_visualizations(sentiments, polarity_scores, movie_details)
+            
+#             positive_keywords_json = json.dumps(dict(positive_keywords))
+#             negative_keywords_json = json.dumps(dict(negative_keywords))
+#             reviews_json = json.dumps(reviews)
+            
+#             # Redirect to the results page
+#             return redirect(url_for('results', 
+#                                     movie=movie_details['title'],
+#                                     year=movie_details['year'],
+#                                     rating=movie_details['rating'],
+#                                     genres=movie_details['genres'],
+#                                     plot=movie_details['plot'],
+#                                     actors=movie_details['actor'],
+#                                     poster=movie_details['poster'],
+#                                     language=movie_details['language'],
+#                                     country=movie_details['country'],
+#                                     writer=movie_details['writer'],
+#                                     awards=movie_details['awards'],
+#                                     director=movie_details['director'],
+#                                     box_office=movie_details['box_office'],
+#                                     release_date=movie_details['release_date'],
+#                                     positive=len(positive_reviews),
+#                                     neutral=len(neutral_reviews),
+#                                     negative=len(negative_reviews),
+#                                     total=len(reviews),
+#                                     rev=reviews_json,
+#                                     positive_keywords=positive_keywords_json,
+#                                     negative_keywords=negative_keywords_json,
+#                                     similar_movies=json.dumps(similar_movies)
+#                                    ))
+#         else:
+#             # In case no reviews are found, show an error on the homepage
+#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+
+#     else:
+#         # Handle the case when coming from a similar movie link
+#         letterboxd_url = request.args.get('letterboxd_url')
+#         if letterboxd_url:
+#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+            
+#             # Construct the full URL for the similar movie
+#             letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
+            
+#             # Fetch reviews and details for the selected similar movie
+#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_full_url)
+
+
+#             print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n "+letterboxd_full_url +"\n"+movie_details)
+#             # Ensure each similar movie has the full URL
+#             for movie in similar_movies:
+#                 movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
+
+#             if reviews:
+#                 sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+#                 generate_word_cloud(reviews)
+#                 create_visualizations(sentiments, polarity_scores, movie_details)
+                
+#                 positive_keywords_json = json.dumps(dict(positive_keywords))
+#                 negative_keywords_json = json.dumps(dict(negative_keywords))
+#                 reviews_json = json.dumps(reviews)
+                
+#                 return redirect(url_for('results', 
+#                                         movie=movie_details['title'],
+#                                         year=movie_details['year'],
+#                                         rating=movie_details['rating'],
+#                                         genres=movie_details['genres'],
+#                                         plot=movie_details['plot'],
+#                                         actors=movie_details['actor'],
+#                                         poster=movie_details['poster'],
+#                                         language=movie_details['language'],
+#                                         country=movie_details['country'],
+#                                         writer=movie_details['writer'],
+#                                         awards=movie_details['awards'],
+#                                         director=movie_details['director'],
+#                                         box_office=movie_details['box_office'],
+#                                         release_date=movie_details['release_date'],
+#                                         positive=len(positive_reviews),
+#                                         neutral=len(neutral_reviews),
+#                                         negative=len(negative_reviews),
+#                                         total=len(reviews),
+#                                         rev=reviews_json,
+#                                         positive_keywords=positive_keywords_json,
+#                                         negative_keywords=negative_keywords_json,
+#                                         similar_movies=json.dumps(similar_movies)
+#                                        ))
+#             else:
+#                 # If no reviews for the similar movie, render error
+#                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+
+#     # Render the homepage with trending movies (if no POST request)
+#     return render_template('index.html', trending_movies=trending_movies)
+
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    # Fetch the trending movies
+    trending_movies = fetch_trending_movies()
+
     if not trending_movies:
-        print("Both methods failed, using fallback data")
         trending_movies = FALLBACK_TRENDING
 
     if request.method == 'POST':
-        movie_title = request.form['letterboxd_url']
-        letterboxd_url = request.form['letterboxd_url']
-        letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+        # Get movie name or similar movie name from form
+        movie_name = request.form.get('letterboxd_url')  # Movie name input from the form
 
-        letterboxd_urls = 'https://letterboxd.com/film/'+letterboxd_url
-        
-        reviews, movie_details,similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
-        
-        print(similar_movies)
-        if reviews:
-            sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-            generate_word_cloud(reviews)
-            create_visualizations(sentiments, polarity_scores, movie_details)
-           
+        # If it's a search or similar movie click
+        if movie_name:  # Either a search or a click on similar movie
+
+
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"+ movie_name)
+            # Format the movie title for the URL (make lowercase and replace spaces with dashes)
+            letterboxd_url = movie_name.replace(' ', '-').lower()
+            letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
+
+            # Fetch reviews and details for the movie (either from search or from similar movie click)
+            reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_name, letterboxd_full_url)
+
+            # Ensure each similar movie has the correct URL
+            # for movie in similar_movies:
+            #     movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
+
+            if reviews:
+                # Perform sentiment analysis
+                sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+                generate_word_cloud(reviews)
+                create_visualizations(sentiments, polarity_scores, movie_details)
+                
+                # Convert keywords to JSON
+                positive_keywords_json = json.dumps(dict(positive_keywords))
+                negative_keywords_json = json.dumps(dict(negative_keywords))
+                reviews_json = json.dumps(reviews)
+                
+                # Redirect to the results page with movie data and sentiment analysis results
+                return redirect(url_for('results', 
+                                        movie=movie_details['title'],
+                                        year=movie_details['year'],
+                                        rating=movie_details['rating'],
+                                        genres=movie_details['genres'],
+                                        plot=movie_details['plot'],
+                                        actors=movie_details['actor'],
+                                        poster=movie_details['poster'],
+                                        language=movie_details['language'],
+                                        country=movie_details['country'],
+                                        writer=movie_details['writer'],
+                                        awards=movie_details['awards'],
+                                        director=movie_details['director'],
+                                        box_office=movie_details['box_office'],
+                                        release_date=movie_details['release_date'],
+                                        positive=len(positive_reviews),
+                                        neutral=len(neutral_reviews),
+                                        negative=len(negative_reviews),
+                                        total=len(reviews),
+                                        rev=reviews_json,
+                                        positive_keywords=positive_keywords_json,
+                                        negative_keywords=negative_keywords_json,
+                                        similar_movies=json.dumps(similar_movies)
+                                       ))
+            else:
+                # In case no reviews are found for the movie
+                return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+
+    else:
+        # Handle the case for initial page load (GET request)
+        letterboxd_url = request.args.get('letterboxd_url')
+        if letterboxd_url:
+            # Handle the URL of a similar movie
+            letterboxd_url = letterboxd_url.replace(' ', '-').lower()
+            letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
             
-            positive_keywords_json = json.dumps(dict(positive_keywords))
-            negative_keywords_json = json.dumps(dict(negative_keywords))
-            reviews_json = json.dumps(reviews)
-            return redirect(url_for('results', 
-                                    movie=movie_details['title'],
-                                    year=movie_details['year'],
-                                    rating=movie_details['rating'],
-                                    genres=movie_details['genres'],
-                                    plot=movie_details['plot'],
-                                    actors=movie_details['actor'],
-                                    poster=movie_details['poster'],
-                                    language=movie_details['language'],
-                                    country=movie_details['country'],
-                                    writer=movie_details['writer'],
-                                    awards=movie_details['awards'],
-                                    director=movie_details['director'],
-                                    box_office=movie_details['box_office'],
-                                    release_date=movie_details['release_date'],
-                                    positive=len(positive_reviews),
-                                    neutral=len(neutral_reviews),
-                                    negative=len(negative_reviews),
-                                    total=len(reviews),
-                                    rev = reviews_json,
-                                    positive_keywords=positive_keywords_json,
-                                    negative_keywords=negative_keywords_json,
-                                    similar_movies=json.dumps(similar_movies)
+            # Fetch reviews and details for the selected similar movie
+            reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_full_url)
 
-                                   ))
-        else:
-            return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-    
+            # Ensure each similar movie has the full URL
+            for movie in similar_movies:
+                movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
+
+            if reviews:
+                # Sentiment analysis and word cloud generation
+                sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
+                generate_word_cloud(reviews)
+                create_visualizations(sentiments, polarity_scores, movie_details)
+                
+                # Convert keywords to JSON
+                positive_keywords_json = json.dumps(dict(positive_keywords))
+                negative_keywords_json = json.dumps(dict(negative_keywords))
+                reviews_json = json.dumps(reviews)
+                
+                # Redirect to the results page
+                return redirect(url_for('results', 
+                                        movie=movie_details['title'],
+                                        year=movie_details['year'],
+                                        rating=movie_details['rating'],
+                                        genres=movie_details['genres'],
+                                        plot=movie_details['plot'],
+                                        actors=movie_details['actor'],
+                                        poster=movie_details['poster'],
+                                        language=movie_details['language'],
+                                        country=movie_details['country'],
+                                        writer=movie_details['writer'],
+                                        awards=movie_details['awards'],
+                                        director=movie_details['director'],
+                                        box_office=movie_details['box_office'],
+                                        release_date=movie_details['release_date'],
+                                        positive=len(positive_reviews),
+                                        neutral=len(neutral_reviews),
+                                        negative=len(negative_reviews),
+                                        total=len(reviews),
+                                        rev=reviews_json,
+                                        positive_keywords=positive_keywords_json,
+                                        negative_keywords=negative_keywords_json,
+                                        similar_movies=json.dumps(similar_movies)
+                                       ))
+            else:
+                # If no reviews for the similar movie, show an error
+                return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+
+    # Render the homepage with trending movies (if no POST request)
     return render_template('index.html', trending_movies=trending_movies)
+
 
 
 @app.route('/results')
