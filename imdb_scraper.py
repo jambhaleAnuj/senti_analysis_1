@@ -172,79 +172,79 @@ def fetch_similar_movies(letterboxd_url):
     return similar_movies
 
 
-def fetch_trending_movies():
-    url = 'https://letterboxd.com/films/ajax/popular/size/large/'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': 'https://letterboxd.com/films/popular/',
-    }
+# def fetch_trending_movies():
+#     url = 'https://letterboxd.com/films/ajax/popular/this/week/?esiAllowFilters=true'
+#     headers = {
+#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+#         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+#         'Accept-Language': 'en-US,en;q=0.5',
+#         'X-Requested-With': 'XMLHttpRequest',
+#         'Referer': 'https://letterboxd.com/films/popular/',
+#     }
 
-    try:
-        session = requests.Session()
+#     try:
+#         session = requests.Session()
         
-        # Get the CSRF token first
-        main_page = session.get('https://letterboxd.com/films/popular/', headers=headers)
-        csrf_token = None
-        if main_page.cookies.get('com.xk72.webparts.csrf'):
-            csrf_token = main_page.cookies.get('com.xk72.webparts.csrf')
-            headers['X-CSRF-Token'] = csrf_token
+#         # Get the CSRF token first
+#         main_page = session.get('https://letterboxd.com/films/popular/', headers=headers)
+#         csrf_token = None
+#         if main_page.cookies.get('com.xk72.webparts.csrf'):
+#             csrf_token = main_page.cookies.get('com.xk72.webparts.csrf')
+#             headers['X-CSRF-Token'] = csrf_token
 
-        # Make the AJAX request
-        response = session.get(url, headers=headers)
-        print("Response status:", response.status_code)
+#         # Make the AJAX request
+#         response = session.get(url, headers=headers)
+#         print("Response status:", response.status_code)
         
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            trending_movies = []
+#         if response.status_code == 200:
+#             soup = BeautifulSoup(response.text, 'html.parser')
+#             trending_movies = []
             
-            # Find all film posters
-            posters = soup.find_all('div', class_='film-poster')
+#             # Find all film posters
+#             posters = soup.find_all('div', class_='film-poster')
             
-            for poster in posters[:12]:
-                try:
-                    # Get film data
-                    title = poster.get('data-film-name')
-                    if not title:
-                        continue
+#             for poster in posters[:12]:
+#                 try:
+#                     # Get film data
+#                     title = poster.get('data-film-name')
+#                     if not title:
+#                         continue
                         
-                    # Get image
-                    img = poster.find('img')
-                    if img:
-                        image_url = img.get('src')
-                        if image_url:
-                            if image_url.startswith('//'):
-                                image_url = 'https:' + image_url
-                            # Convert to larger image size
-                            image_url = image_url.replace('0-150-0-225', '0-230-0-345')
+#                     # Get image
+#                     img = poster.find('img')
+#                     if img:
+#                         image_url = img.get('src')
+#                         if image_url:
+#                             if image_url.startswith('//'):
+#                                 image_url = 'https:' + image_url
+#                             # Convert to larger image size
+#                             image_url = image_url.replace('0-150-0-225', '0-230-0-345')
                     
-                    # Get link
-                    link = poster.find('a')
-                    if link:
-                        movie_slug = link.get('href', '').split('/film/')[-1].strip('/')
-                    else:
-                        movie_slug = title.lower().replace(' ', '-')
+#                     # Get link
+#                     link = poster.find('a')
+#                     if link:
+#                         movie_slug = link.get('href', '').split('/film/')[-1].strip('/')
+#                     else:
+#                         movie_slug = title.lower().replace(' ', '-')
                     
-                    movie_data = {
-                        'title': title,
-                        'link': movie_slug,
-                        'image': image_url
-                    }
+#                     movie_data = {
+#                         'title': title,
+#                         'link': movie_slug,
+#                         'image': image_url
+#                     }
                     
-                    trending_movies.append(movie_data)
-                    print(f"Added movie: {title}")
+#                     trending_movies.append(movie_data)
+#                     print(f"Added movie: {title}")
                     
-                except Exception as e:
-                    print(f"Error processing movie: {str(e)}")
-                    continue
+#                 except Exception as e:
+#                     print(f"Error processing movie: {str(e)}")
+#                     continue
             
-            return trending_movies
+#             return trending_movies
             
-    except Exception as e:
-        print(f"Error fetching trending movies: {str(e)}")
-        return []
+#     except Exception as e:
+#         print(f"Error fetching trending movies: {str(e)}")
+#         return []
 
 
 def get_omdb_data(movie_title):
@@ -304,3 +304,70 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     }
 
     return review_texts, movie_details, similar_movies
+
+
+# Full URL of the AJAX endpoint from Letterboxd
+trend_url = "https://letterboxd.com/films/ajax/popular/this/week/?esiAllowFilters=true"
+BASE_URL = 'http://www.omdbapi.com/'
+# Function to get the poster from OMDB API
+def get_poster_from_omdb(title):
+    params = {
+        't': title,  # Title of the movie
+        'apikey': OMDB_API_KEY  # Your OMDB API key
+    }
+    
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        # Check if we received the poster URL in the response
+        if data.get('Response') == 'True':
+            return data.get('Poster', 'No poster found')
+        else:
+            return 'No poster found'
+    else:
+        return 'Error fetching data from OMDB'
+
+# Function to fetch trending movies
+def fetch_trending_movies():
+    response = requests.get(trend_url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Now inspect the structure of the HTML to find the film elements
+        # Look for all films' posters and titles within the HTML
+        films = soup.find_all('div', class_='poster')
+
+        # Counter to limit the output to 12 films
+        trending_movies = []
+        count = 0
+        for film in films:
+            # Stop after 12 films
+            if count >= 12:
+                break
+            
+            # Extract the title (usually in the 'alt' attribute of an <img> tag)
+            title = film.find('img')['alt'] if film.find('img') else 'No title found'
+
+            # Format the link: Convert title to lowercase and replace spaces with hyphens
+            link = title.lower().replace(' ', '-')
+
+            # Fetch the poster URL from OMDB API using the movie title
+            omdb_poster_url = get_poster_from_omdb(title)
+
+            # Format the data as specified
+            movie_data = {
+                'title': title,
+                'link': link,
+                'image': omdb_poster_url  # You can replace this with 'poster_url' for the Letterboxd poster
+            }
+
+            trending_movies.append(movie_data)
+            count += 1  # Increment the counter
+
+        return trending_movies
+    else:
+        print(f"Failed to fetch data. Status code: {response.status_code}")
+        return []  # Return an empty list if request fails
