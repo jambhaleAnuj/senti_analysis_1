@@ -1,251 +1,57 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import urllib.parse
 
-# OMDb API Key
 OMDB_API_KEY = '36650a58'
-
-
-# def fetch_similar_movies(letterboxd_url):
-#     """
-#     Fetch similar movies from Letterboxd and get their posters from OMDB
-#     """
-#     similar_movies = []
-    
-#     try:
-#         similar_url = f"{letterboxd_url}/similar"
-#         headers = {
-#             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-#         }
-        
-#         response = requests.get(similar_url, headers=headers)
-#         soup = BeautifulSoup(response.text, 'html.parser')
-        
-#         similar_grid = soup.find('ul', class_='poster-list')
-#         if similar_grid:
-#             movie_items = similar_grid.find_all('li', class_='poster-container')
-            
-#             for item in movie_items[:6]:
-#                 try:
-#                     film_poster = item.find('div', class_='film-poster')
-#                     if film_poster:
-#                         movie_title = film_poster.find('img')['alt']
-#                         movie_url = film_poster['data-target-link']
-                        
-#                         # Get movie year from the URL if available
-#                         year = ''
-#                         if '-' in movie_url:
-#                             try:
-#                                 year = movie_url.split('-')[-1]
-#                                 if year.isdigit() and len(year) == 4:
-#                                     year = f"&y={year}"
-#                                 else:
-#                                     year = ''
-#                             except:
-#                                 year = ''
-                        
-#                         # Fetch poster from OMDB API
-#                         omdb_url = f"http://www.omdbapi.com/?t={movie_title}{year}&apikey={OMDB_API_KEY}"
-#                         omdb_response = requests.get(omdb_url)
-#                         omdb_data = omdb_response.json()
-                        
-#                         poster_url = omdb_data.get('Poster', 'N/A')
-#                         if poster_url == 'N/A':
-#                             # Use a default poster if OMDB doesn't have one
-#                             poster_url = "path/to/default/poster.jpg"
-                        
-#                         similar_movies.append({
-#                             'title': movie_title,
-#                             'url': f"https://letterboxd.com{movie_url}",
-#                             'poster': poster_url,
-#                             'year': year.replace('&y=', '') if year else 'N/A'
-#                         })
-                        
-#                 except Exception as e:
-#                     print(f"Error processing similar movie: {e}")
-#                     continue
-                    
-#     except Exception as e:
-#         print(f"Error fetching similar movies: {e}")
-    
-#     return similar_movies
-
-# def fetch_similar_movies(letterboxd_url):
-#     similar_movies = []
-    
-#     try:
-#         similar_url = f"{letterboxd_url}/similar"
-#         headers = {
-#             'User -Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-#         }
-        
-#         response = requests.get(similar_url, headers=headers)
-#         soup = BeautifulSoup(response.text, 'html.parser')
-        
-#         similar_grid = soup.find('ul', class_='poster-list')
-#         if similar_grid:
-#             movie_items = similar_grid.find_all('li', class_='poster-container')
-            
-#             for item in movie_items[:6]:
-#                 try:
-#                     film_poster = item.find('div', class_='film-poster')
-#                     if film_poster:
-#                         movie_title = film_poster.find('img')['alt']
-#                         movie_url = film_poster['data-target-link']
-                        
-#                         # Fetch poster from OMDB API
-#                         omdb_url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
-#                         omdb_response = requests.get(omdb_url)
-#                         omdb_data = omdb_response.json()
-                        
-#                         poster_url = omdb_data.get('Poster', 'N/A')
-#                         if poster_url == 'N/A':
-#                             poster_url = "path/to/default/poster.jpg"
-                        
-#                         # Create a URL for your analysis page
-#                         analysis_url = f"/results?movie={movie_title.replace(' ', '%20')}"  # URL encode spaces
-                        
-#                         similar_movies.append({
-#                             'title': movie_title,
-#                             'url': analysis_url,  # Use your analysis URL instead of Letterboxd
-#                             'poster': poster_url,
-#                         })
-                        
-#                 except Exception as e:
-#                     print(f"Error processing similar movie: {e}")
-#                     continue
-                    
-#     except Exception as e:
-#         print(f"Error fetching similar movies: {e}")
-    
-#     return similar_movies
-
 
 def fetch_similar_movies(letterboxd_url):
     similar_movies = []
-    
+
     try:
         similar_url = f"{letterboxd_url}/similar"
         headers = {
             'User -Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        
+
         response = requests.get(similar_url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         similar_grid = soup.find('ul', class_='poster-list')
         if similar_grid:
             movie_items = similar_grid.find_all('li', class_='poster-container')
-            
+
             for item in movie_items[:6]:
                 try:
                     film_poster = item.find('div', class_='film-poster')
                     if film_poster:
                         movie_title = film_poster.find('img')['alt']
                         movie_url = film_poster['data-target-link']
-                        
-                        # Fetch poster from OMDB API
+
                         omdb_url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
                         omdb_response = requests.get(omdb_url)
                         omdb_data = omdb_response.json()
-                        
+
                         poster_url = omdb_data.get('Poster', 'N/A')
                         if poster_url == 'N/A':
                             poster_url = "path/to/default/poster.jpg"
-                        
-                        # Create a URL for the root route with the search parameters
+
                         search_url = f"/{movie_title.replace(' ','-')}"
-                        
+
                         similar_movies.append({
                             'title': movie_title,
-                            'url': search_url,  # Link to the root route instead
+                            'url': search_url,
                             'poster': poster_url,
                         })
-                        
+
                 except Exception as e:
                     print(f"Error processing similar movie: {e}")
                     continue
-                    
+
     except Exception as e:
         print(f"Error fetching similar movies: {e}")
-    
+
     return similar_movies
-
-
-# def fetch_trending_movies():
-#     url = 'https://letterboxd.com/films/ajax/popular/this/week/?esiAllowFilters=true'
-#     headers = {
-#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-#         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-#         'Accept-Language': 'en-US,en;q=0.5',
-#         'X-Requested-With': 'XMLHttpRequest',
-#         'Referer': 'https://letterboxd.com/films/popular/',
-#     }
-
-#     try:
-#         session = requests.Session()
-        
-#         # Get the CSRF token first
-#         main_page = session.get('https://letterboxd.com/films/popular/', headers=headers)
-#         csrf_token = None
-#         if main_page.cookies.get('com.xk72.webparts.csrf'):
-#             csrf_token = main_page.cookies.get('com.xk72.webparts.csrf')
-#             headers['X-CSRF-Token'] = csrf_token
-
-#         # Make the AJAX request
-#         response = session.get(url, headers=headers)
-#         print("Response status:", response.status_code)
-        
-#         if response.status_code == 200:
-#             soup = BeautifulSoup(response.text, 'html.parser')
-#             trending_movies = []
-            
-#             # Find all film posters
-#             posters = soup.find_all('div', class_='film-poster')
-            
-#             for poster in posters[:12]:
-#                 try:
-#                     # Get film data
-#                     title = poster.get('data-film-name')
-#                     if not title:
-#                         continue
-                        
-#                     # Get image
-#                     img = poster.find('img')
-#                     if img:
-#                         image_url = img.get('src')
-#                         if image_url:
-#                             if image_url.startswith('//'):
-#                                 image_url = 'https:' + image_url
-#                             # Convert to larger image size
-#                             image_url = image_url.replace('0-150-0-225', '0-230-0-345')
-                    
-#                     # Get link
-#                     link = poster.find('a')
-#                     if link:
-#                         movie_slug = link.get('href', '').split('/film/')[-1].strip('/')
-#                     else:
-#                         movie_slug = title.lower().replace(' ', '-')
-                    
-#                     movie_data = {
-#                         'title': title,
-#                         'link': movie_slug,
-#                         'image': image_url
-#                     }
-                    
-#                     trending_movies.append(movie_data)
-#                     print(f"Added movie: {title}")
-                    
-#                 except Exception as e:
-#                     print(f"Error processing movie: {str(e)}")
-#                     continue
-            
-#             return trending_movies
-            
-#     except Exception as e:
-#         print(f"Error fetching trending movies: {str(e)}")
-#         return []
-
 
 def get_omdb_data(movie_title):
     """Fetches data from OMDb API."""
@@ -254,38 +60,87 @@ def get_omdb_data(movie_title):
     return response.json()
 
 def fetch_letterboxd_reviews(letterboxd_url):
-    """Fetches reviews from Letterboxd."""
-    response = requests.get(letterboxd_url)
-    if response.status_code != 200:
-        return []
-    
-    season_page = BeautifulSoup(response.content, 'html.parser')
-    
-    # Update this to match the correct class name for review text
-    reviews = season_page.find_all('div', class_='body-text -prose js-review-body js-collapsible-text')
-    
+    """Fetches multiple pages of reviews from Letterboxd review pages."""
+    base_url = letterboxd_url.rstrip('/')
     review_texts = []
-    for review in reviews:
-        review_text = review.get_text(strip=True)
-        review_texts.append(review_text)
-    
+
+    # Try to fetch reviews from up to 10 pages
+    for page in range(1, 11):  # You can change 11 to any desired page count limit
+        paged_url = f"{base_url}/page/{page}/"
+        print(f"Fetching: {paged_url}")
+        response = requests.get(paged_url)
+        if response.status_code != 200:
+            print(f"Page {page} failed to load.")
+            break
+
+        soup = BeautifulSoup(response.content, 'html.parser')
+        reviews = soup.find_all('div', class_='body-text -prose js-review-body js-collapsible-text')
+
+        if not reviews:
+            # No more reviews found, stop paginating
+            print(f"No reviews found on page {page}, stopping.")
+            break
+
+        for review in reviews:
+            review_text = review.get_text(strip=True)
+            review_texts.append(review_text)
+
     return review_texts
 
 
+def scrape_user_reviews(movie_name):
+    """Scrapes user reviews from Rotten Tomatoes for both movies (/m/) and TV shows (/t/)."""
+
+    base_url = "https://www.rottentomatoes.com"
+    slug = urllib.parse.quote(movie_name.lower().replace(" ", "_"))
+
+    possible_paths = [f"/m/{slug}", f"/tv/{slug}"]
+    user_reviews = []
+
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    for path in possible_paths:
+        full_url = f"{base_url}{path}/reviews?type=user"
+        print(f"Trying: {full_url}")
+        response = requests.get(full_url, headers=headers)
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            reviews = soup.find_all('div', class_='audience-review-row')
+
+            for review in reviews:
+                review_text = review.find('p', class_='audience-reviews__review js-review-text')
+                if review_text:
+                    user_reviews.append(review_text.get_text(strip=True))
+
+            # If we found any reviews, no need to try the other path
+            if user_reviews:
+                break
+
+    if not user_reviews:
+        print(f"No reviews found for {movie_name} on Rotten Tomatoes.")
+
+    return user_reviews
+
+
 def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
-    
-    """Combines OMDb movie details with Letterboxd reviews."""
-    # Fetch movie details from OMDb
+    """Combines OMDb movie details with Letterboxd and Rotten Tomatoes reviews."""
+
     omdb_data = get_omdb_data(movie_title)
     print(omdb_data)
 
-    # Fetch reviews from Letterboxd
     review_texts = fetch_letterboxd_reviews(letterboxd_url)
+
+    # Also fetch Rotten Tomatoes reviews and combine
+    rt_reviews = scrape_user_reviews(movie_title)
+    review_texts.extend(rt_reviews)
+
     print(review_texts)
 
     similar_movies = fetch_similar_movies(letterboxd_url)
 
-    # Organize movie details
     movie_details = {
         'title': omdb_data.get('Title', 'N/A'),
         'year': omdb_data.get('Year', 'N/A'),
@@ -305,21 +160,19 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
 
     return review_texts, movie_details, similar_movies
 
-
-# Full URL of the AJAX endpoint from Letterboxd
 trend_url = "https://letterboxd.com/films/ajax/popular/this/week/?esiAllowFilters=true"
 BASE_URL = 'http://www.omdbapi.com/'
-# Function to get the poster from OMDB API
+
 def get_poster_from_omdb(title):
     params = {
-        't': title,  # Title of the movie
-        'apikey': OMDB_API_KEY  # Your OMDB API key
+        't': title,
+        'apikey': OMDB_API_KEY
     }
-    
+
     response = requests.get(BASE_URL, params=params)
     if response.status_code == 200:
         data = response.json()
-        # Check if we received the poster URL in the response
+
         if data.get('Response') == 'True':
             return data.get('Poster', 'No poster found')
         else:
@@ -327,47 +180,33 @@ def get_poster_from_omdb(title):
     else:
         return 'Error fetching data from OMDB'
 
-# Function to fetch trending movies
 def fetch_trending_movies():
     response = requests.get(trend_url)
 
-    # Check if the request was successful
     if response.status_code == 200:
-        # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Now inspect the structure of the HTML to find the film elements
-        # Look for all films' posters and titles within the HTML
         films = soup.find_all('div', class_='poster')
 
-        # Counter to limit the output to 12 films
         trending_movies = []
         count = 0
         for film in films:
-            # Stop after 12 films
             if count >= 12:
                 break
-            
-            # Extract the title (usually in the 'alt' attribute of an <img> tag)
+
             title = film.find('img')['alt'] if film.find('img') else 'No title found'
-
-            # Format the link: Convert title to lowercase and replace spaces with hyphens
             link = title.lower().replace(' ', '-')
-
-            # Fetch the poster URL from OMDB API using the movie title
             omdb_poster_url = get_poster_from_omdb(title)
 
-            # Format the data as specified
             movie_data = {
                 'title': title,
                 'link': link,
-                'image': omdb_poster_url  # You can replace this with 'poster_url' for the Letterboxd poster
+                'image': omdb_poster_url
             }
 
             trending_movies.append(movie_data)
-            count += 1  # Increment the counter
+            count += 1
 
         return trending_movies
     else:
         print(f"Failed to fetch data. Status code: {response.status_code}")
-        return []  # Return an empty list if request fails
+        return []
