@@ -405,6 +405,7 @@ def index():
                 generate_word_cloud(reviews)
                 create_visualizations(sentiments, polarity_scores, movie_details)
                 
+                # print("POSITVE REVIEWS: ###### \n",positive_reviews)
                 # Convert keywords to JSON
                 positive_keywords_json = json.dumps(dict(positive_keywords))
                 negative_keywords_json = json.dumps(dict(negative_keywords))
