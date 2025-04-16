@@ -65,8 +65,8 @@ def fetch_letterboxd_reviews(letterboxd_url):
     review_texts = []
 
     # Try to fetch reviews from up to 10 pages
-    for page in range(1, 11):  # You can change 11 to any desired page count limit
-        paged_url = f"{base_url}/page/{page}/"
+    for page in range(1, 15):  # You can change 11 to any desired page count limit
+        paged_url = f"{base_url}//reviews/by/activity/page/{page}/"
         print(f"Fetching: {paged_url}")
         response = requests.get(paged_url)
         if response.status_code != 200:
@@ -90,7 +90,7 @@ def fetch_letterboxd_reviews(letterboxd_url):
 
 def scrape_user_reviews(movie_name):
     """Scrapes user reviews from Rotten Tomatoes for both movies (/m/) and TV shows (/t/)."""
-
+    
     base_url = "https://www.rottentomatoes.com"
     slug = urllib.parse.quote(movie_name.lower().replace(" ", "_"))
 
@@ -101,6 +101,7 @@ def scrape_user_reviews(movie_name):
         "User-Agent": "Mozilla/5.0"
     }
 
+    # First attempt: try both paths (movie and TV show)
     for path in possible_paths:
         full_url = f"{base_url}{path}/reviews?type=user"
         print(f"Trying: {full_url}")
@@ -115,15 +116,37 @@ def scrape_user_reviews(movie_name):
                 if review_text:
                     user_reviews.append(review_text.get_text(strip=True))
 
-            # If we found any reviews, no need to try the other path
-            if user_reviews:
-                break
+    # If no reviews are found, attempt to retry with the movie year
+    if not user_reviews:
+        # You would need a function to get movie details, like 'get_omdb_data()'
+        omdb_data = get_omdb_data(movie_name)  # Assume this function gets the movie year
+        movie_year = omdb_data.get('Year')
 
+        if movie_year:
+            print(f"Movie year found: {movie_year}")
+            for path in possible_paths:
+                # Try with the year appended to the path for both movie and TV show
+                full_url = f"{base_url}{path}_{movie_year}/reviews?type=user"
+                print(f"Trying with year: {full_url}")
+                response = requests.get(full_url, headers=headers)
+
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    reviews = soup.find_all('div', class_='audience-review-row')
+
+                    for review in reviews:
+                        review_text = review.find('p', class_='audience-reviews__review js-review-text')
+                        if review_text:
+                            user_reviews.append(review_text.get_text(strip=True))
+
+        else:
+            print("No movie year found. Could not retry with year.")
+
+    # If no reviews are found even after retrying with the year
     if not user_reviews:
         print(f"No reviews found for {movie_name} on Rotten Tomatoes.")
-
+    print("ROTTENT TOMATOES: \n",user_reviews)
     return user_reviews
-
 
 def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     """Combines OMDb movie details with Letterboxd and Rotten Tomatoes reviews."""
