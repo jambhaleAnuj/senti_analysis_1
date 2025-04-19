@@ -6,7 +6,7 @@ from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations,plot_word_frequency,plot_genre_distribution
 import json
 from flask import jsonify
-
+# from youtube_scraper import search_trailer_video_id, get_trailer_comments
 
 import requests
 
@@ -405,7 +405,6 @@ def index():
                 generate_word_cloud(reviews)
                 create_visualizations(sentiments, polarity_scores, movie_details)
                 
-                # print("POSITVE REVIEWS: ###### \n",positive_reviews)
                 # Convert keywords to JSON
                 positive_keywords_json = json.dumps(dict(positive_keywords))
                 negative_keywords_json = json.dumps(dict(negative_keywords))
@@ -428,6 +427,7 @@ def index():
                                         box_office=movie_details['box_office'],
                                         release_date=movie_details['release_date'],
                                         positive=len(positive_reviews),
+                                        # positive_reviews = positive_reviews,
                                         neutral=len(neutral_reviews),
                                         negative=len(negative_reviews),
                                         total=len(reviews),
@@ -487,6 +487,7 @@ def index():
                                         negative=len(negative_reviews),
                                         total=len(reviews),
                                         rev=reviews_json,
+                                        # positive_reviews = positive_reviews,
                                         positive_keywords=positive_keywords_json,
                                         negative_keywords=negative_keywords_json,
                                         similar_movies=json.dumps(similar_movies)
