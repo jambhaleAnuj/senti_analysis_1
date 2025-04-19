@@ -9,3 +9,5 @@ IMDbPY
 plotly
 better_profanity
 spacy
+python-dotenv
+google-api-python-client
