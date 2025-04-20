@@ -6,6 +6,17 @@
 -  Unzip the project file
 -  Open CMD in the folder. i.e the at the location of the project folder
 -  Now run  ``` pip install -r requirements.txt ```  
+  
+
+<br>
+
+- ### TO GENERATE YOUTUBE API KEY 
+- https://developers.google.com/youtube/v3/getting-started
+- Go to the above link and follow the instructions to get the youtube api key used to fetch the comments to get the People's reviews of movie before release
+- COPY the api key and paste it in the ```.env``` file present in the project.  
+
+<br>
+
 -  Once all the above steps are done. Run the following command
 -  ``` python app.py ```
 -  Now copy the IP address displayed and paste it in the terminal
