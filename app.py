@@ -1,12 +1,14 @@
 import json
 from plotly.utils import PlotlyJSONEncoder
+import plotly.express as px
 import plotly.io as pio
+import plotly.graph_objects as go
 from flask import Flask, render_template, request, redirect, url_for
 from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations,plot_word_frequency,plot_genre_distribution
 import json
 from flask import jsonify
-# from youtube_scraper import search_trailer_video_id, get_trailer_comments
+from youtube_scraper import search_trailer_video_id, get_trailer_comments
 
 import requests
 
@@ -376,8 +378,14 @@ def index():
     # Fetch the trending movies
     trending_movies = fetch_trending_movies()
 
-    if not trending_movies:
+    
+    #################################### UN-COMMENT THIS TO GET THE REALTIME TRENDING MOVIES #############################################
+    # if not trending_movies:
+    #     trending_movies = FALLBACK_TRENDING
+
+    if  trending_movies:
         trending_movies = FALLBACK_TRENDING
+
 
     if request.method == 'POST':
         # Get movie name or similar movie name from form
@@ -541,9 +549,53 @@ def results():
         print(genres)
 
 
+########################################### FOR YOUTUBE ###############################################
+
+  # 1. YouTube Trailer Comments
+        print("ENTERED YOUTUBE")
+        trailer_comments = get_trailer_comments(movie)
+        # Make sure each comment is being passed as a string
+        # print("YOUTUBE TRAILER COMMENTS: \n",[comment['text'] for comment in trailer_comments])
+
+        # 2. Sentiment analysis of YouTube comments
+        if trailer_comments:
+            yt_sentiments, yt_positive, yt_neutral, yt_negative, yt_polarity_scores, yt_positive_keywords, yt_negative_keywords = analyze_sentiment([comment['text'] for comment in trailer_comments])
+        else:
+            yt_sentiments = yt_positive = yt_neutral = yt_negative = yt_polarity_scores = yt_positive_keywords = yt_negative_keywords = []
+
+        print("YOUTUBE POSITIVE",yt_sentiments)
+        print(yt_sentiments['positive'])
+        print(yt_negative)
+        print(yt_neutral)
+        # 3. Generate visualizations for trailer comments (pie chart, bar chart)
+        # Pie chart for sentiment distribution
+
+        sentiment_counts = {'positive': yt_sentiments['positive'], 'neutral': yt_sentiments['neutral'], 'negative': yt_sentiments['negative']}
+        yt_labels = ['Positive', 'Neutral', 'Negative']
+        sizes = [yt_sentiments['positive'], yt_sentiments['neutral'], yt_sentiments['negative']]
+
+        # fig_pie_yt = px.pie(names=list(sentiment_counts.keys()), values=list(sentiment_counts.values()), title=f"Sentiment Distribution for Trailer Comments of {movie}")
+        # fig_pie_yt = go.Figure()
+        fig_pie_yt = go.Figure(data=[go.Pie(labels=yt_labels, values=sizes, hoverinfo='label+percent', textinfo='percent')])
+
+        pie_json_yt = json.dumps(fig_pie_yt, cls=PlotlyJSONEncoder)
+
+        # Bar chart for polarity scores
+        # fig_bar_yt = px.bar(x=['positive', 'neutral', 'negative'], y=[len(yt_positive), len(yt_neutral), len(yt_negative)], title=f"Sentiment Breakdown for Trailer Comments of {movie}")
+        
+        fig_bar_yt = go.Figure(data=[go.Bar(x=yt_labels, y=sizes, marker=dict(color=['green', 'gray', 'red']))])
+        
+        bar_json_yt = json.dumps(fig_bar_yt, cls=PlotlyJSONEncoder)
+
+        # Generate word frequency plot for YouTube comments
+        word_freq_yt = plot_word_frequency([comment['text'] for comment in trailer_comments], sentiment, {'title': movie})
+        word_freq_json_yt = json.dumps(word_freq_yt, cls=PlotlyJSONEncoder)
+
+
+########################################################################################################
         #Genre Distribution
         plt_genre = plot_genre_distribution(genres)
-        print(plt_genre)
+        # print(plt_genre)
 
         genre_fig = plot_genre_distribution(genres)
     
@@ -555,7 +607,7 @@ def results():
         word_freq_plot_html = plot_word_frequency(reviews, sentiment,{'title':movie})
         word_freq_plot_json = json.dumps(word_freq_plot_html,cls=PlotlyJSONEncoder)
 
-       
+        print("POSITIVE",positive)
         # Get visualizations
         fig_pie, fig_bar, fig_hist = create_visualizations(
             {'positive': positive, 'neutral': neutral, 'negative': negative}, 
@@ -593,7 +645,10 @@ def results():
                                bar_chart=bar_json,
                                hist_chart=hist_json,
                                word_freq_plot=word_freq_plot_json,
-                               genre_plot_json=genre_plot_json)
+                               genre_plot_json=genre_plot_json,
+                                pie_chart_yt=pie_json_yt,
+                               bar_chart_yt=bar_json_yt,
+                               word_freq_plot_yt=word_freq_json_yt)
 
     except Exception as e:
         print(f"Error in results route: {str(e)}")

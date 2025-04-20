@@ -53,9 +53,9 @@ def analyze_sentiment(reviews):
     positive_keywords = extract_keywords(positive_reviews, 'positive')
     negative_keywords = extract_keywords(negative_reviews, 'negative')
     
-    print("positive reviews:",positive_reviews)
-    print("...........")
-    print("Negative Reviews: ",negative_reviews)
+    # print("positive reviews:",positive_reviews)
+    # print("...........")
+    # print("Negative Reviews: ",negative_reviews)
     return sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords
 
 def extract_keywords(reviews, sentiment):

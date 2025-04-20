@@ -1,7 +1,14 @@
+import json
 import requests
 from bs4 import BeautifulSoup
 import re
 import urllib.parse
+from dotenv import load_dotenv
+import os
+
+# load_dotenv()
+# TMDB_API = os.getenv("TMDB_API")
+
 
 OMDB_API_KEY = '36650a58'
 
@@ -65,7 +72,7 @@ def fetch_letterboxd_reviews(letterboxd_url):
     review_texts = []
 
     # Try to fetch reviews from up to 10 pages
-    for page in range(1, 12):  # You can change 11 to any desired page count limit
+    for page in range(1, 5):  # You can change 11 to any desired page count limit
         paged_url = f"{base_url}//reviews/by/activity/page/{page}/"
         print(f"Fetching: {paged_url}")
         response = requests.get(paged_url)
@@ -145,8 +152,37 @@ def scrape_user_reviews(movie_name):
     # If no reviews are found even after retrying with the year
     if not user_reviews:
         print(f"No reviews found for {movie_name} on Rotten Tomatoes.")
-    print("ROTTENT TOMATOES: \n",user_reviews)
+    # print("ROTTENT TOMATOES: \n",user_reviews)
     return user_reviews
+
+
+def get_tmdb_reviews(getmovie_name):
+    movie_name = getmovie_name
+    movie_name.replace(" ","%20")
+    url = f"https://api.themoviedb.org/3/search/movie?query={movie_name}&include_adult=false&language=en-US&page=1"
+
+    headers = {
+        "accept": "application/json",
+        f"Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzMDExMTgzMjU1Njc5MWM2OThhMzcwYjdlNmYyMzc4NCIsIm5iZiI6MTc0NTE2MTY0Ny44MDA5OTk5LCJzdWIiOiI2ODA1MGRhZjZlMWE3NjllODFlZTI1MmUiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.wp7NbWIr8Itm1ZCmVeVIq6JcVZiwnhmencqG5GE-N_o"
+    }
+
+    response = requests.get(url, headers=headers)
+    result = response.json().get('results')
+
+    movie_id = result[0]['id']
+    print(movie_id)
+
+
+    url_for_review = f"https://api.themoviedb.org/3/movie/{movie_id}/reviews?language=en-US&page=1"
+
+    response = requests.get(url_for_review, headers=headers)
+    result = response.json().get('results')
+    tmdb_reviews = result[0]['content']
+    print(tmdb_reviews)
+    return tmdb_reviews
+
+
+
 
 def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     """Combines OMDb movie details with Letterboxd and Rotten Tomatoes reviews."""
@@ -160,7 +196,11 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     rt_reviews = scrape_user_reviews(movie_title)
     review_texts.extend(rt_reviews)
 
-    print(review_texts)
+    tmdb_review = get_tmdb_reviews(movie_title)
+    print(tmdb_review)
+    review_texts.extend(tmdb_review)
+    print("Added TMDB reviews")
+    # print(review_texts)
 
     similar_movies = fetch_similar_movies(letterboxd_url)
 
