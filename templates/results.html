@@ -18,6 +18,7 @@
       body {
         background-color: #141414;
         color: #ffffff;
+        padding: 100px;
       }
       .card {
         background-color: #181818;
@@ -139,18 +140,7 @@
               </div>
             </div>
 
-            <!-- Interactive Sentiment Count (Bar Chart) -->
-            <div class="card mb-4">
-              <div class="card-body">
-                <h2 class="card-title h4">Sentiment Count of Reviews after the movie release(Bar Chart)</h2>
-                <div id="bar-chart"></div>
-                <script>
-                  var barData = {{ bar_chart | tojson }};
-                  const barObj = JSON.parse(barData);
-                  Plotly.newPlot('bar-chart', barObj.data, barObj.layout);
-                </script>
-              </div>
-            </div>
+            
 
              <!-- Interactive Polarity Distribution (Histogram) -->
             <div class="card mb-4">
@@ -169,10 +159,21 @@
           
 
           <div class="col-md-6">
-
+<!-- Interactive Sentiment Count (Bar Chart) -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h2 class="card-title h4">Sentiment Count of Reviews after the movie release(Bar Chart)</h2>
+                <div id="bar-chart"></div>
+                <script>
+                  var barData = {{ bar_chart | tojson }};
+                  const barObj = JSON.parse(barData);
+                  Plotly.newPlot('bar-chart', barObj.data, barObj.layout);
+                </script>
+              </div>
+            </div>
 
             <!-- PIE CHART OF YT -->
-            <div class="card mb-4">
+            <!-- <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Sentiment Distribution of People before the movie release</h2>
                 <div id="yt-pie-chart">
@@ -188,11 +189,11 @@
     </script>
 </div>
               </div>
-            </div>
+            </div> -->
 
            
 
-<div class="card mb-4">
+<!-- <div class="card mb-4">
               <div class="card-body">
                 <h2 class="card-title h4">Sentiment Count (Bar Chart) Of Reviews Before movie release</h2>
                 <div id="yt-bar-chart">
@@ -201,7 +202,7 @@
         const barObjYT = JSON.parse(barChartData)
         Plotly.newPlot('yt-bar-chart', barObjYT.data,barObjYT.layout);
     </script>
-</div>
+</div> -->
               </div>
             </div>
             
@@ -218,18 +219,51 @@
               class="btn-toggle"
               onclick="toggleVisibility('word-frequency-section')"
             >
-              Word Frequency in {{ sentiment }} Reviews
+              Sentiment Analysis before release 
             </button>
             <div
               class="toggle-content chart-container"
               id="word-frequency-section"
             >
-              <div id="word-frequency-bar-chart"></div>
+              <!-- <div id="word-frequency-bar-chart"></div>
               <script>
                 var freq = {{ word_freq_plot | safe }};
                 Plotly.react('word-frequency-bar-chart', freq.data, freq.layout);
-              </script>
+              </script> -->
+
+              <div class="card-body">
+                <h2 class="card-title h4">Sentiment Count Chart Before release</h2>
+                <div id="yt-bar-chart">
+    <script type="text/javascript">
+        var barChartData = {{ bar_chart_yt | tojson }};
+        const barObjYT = JSON.parse(barChartData)
+        Plotly.newPlot('yt-bar-chart', barObjYT.data,barObjYT.layout);
+    </script>
+</div>
+
+
+
+
             </div>
+
+
+
+<div class="card-body">
+                <h2 class="card-title h4">Sentiment Distribution before release</h2>
+                <div id="yt-pie-chart">
+    <script type="text/javascript">
+        var pieChartData = {{ pie_chart_yt | tojson }};
+        const piObjYT = JSON.parse(pieChartData);
+                  piObjYT.data[0].marker = {
+                             colors: ['#73CE96','#636EFA',  '#E4523B']  // Red for negative, Green for positive, Grey for neutral
+                           };
+        // Plotly.newPlot('yt-pie-chart', pieChartData);
+        Plotly.newPlot('yt-pie-chart', piObjYT.data, piObjYT.layout);
+
+    </script>
+</div>
+              </div>
+
           </div>
         </div>
 
