@@ -72,7 +72,7 @@ def fetch_letterboxd_reviews(letterboxd_url):
     review_texts = []
 
     # Try to fetch reviews from up to 10 pages
-    for page in range(1, 5):  # You can change 11 to any desired page count limit
+    for page in range(1, 8):  # You can change 11 to any desired page count limit
         paged_url = f"{base_url}//reviews/by/activity/page/{page}/"
         print(f"Fetching: {paged_url}")
         response = requests.get(paged_url)
@@ -196,10 +196,10 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     rt_reviews = scrape_user_reviews(movie_title)
     review_texts.extend(rt_reviews)
 
-    tmdb_review = get_tmdb_reviews(movie_title)
-    print(tmdb_review)
-    review_texts.extend(tmdb_review)
-    print("Added TMDB reviews")
+    # tmdb_review = get_tmdb_reviews(movie_title)
+    # print(tmdb_review)
+    # review_texts.extend(tmdb_review)
+    # print("Added TMDB reviews")
     # print(review_texts)
 
     similar_movies = fetch_similar_movies(letterboxd_url)
