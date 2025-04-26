@@ -14,56 +14,121 @@ import requests
 
 app = Flask(__name__)
 
+# FALLBACK_TRENDING = [
+#     {
+#         'title': 'Oppenheimer',
+#         'link': 'oppenheimer',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/7/8/4/3/2/8/784328-oppenheimer-0-1000-0-1500-crop.jpg?v=e3c6e7a32c'
+#     },
+#     {
+#         'title': 'Barbie',
+#         'link': 'barbie',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/7/7/0/6/4/277064-barbie-0-230-0-345-crop.jpg?v=1b83dc7a71'
+#     },
+#     {
+#         'title': 'Fight Club',
+#         'link': 'fight-club',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/5/1/5/6/8/51568-fight-club-0-1000-0-1500-crop.jpg?v=768b32dfa4'
+#     },
+#     {
+#         'title': 'Parasite',
+#         'link': 'parasite',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/2/6/4/0/6/426406-parasite-0-1000-0-1500-crop.jpg?v=8f5653f710'
+#     },
+#     {
+#         'title': 'Everything Everywhere All at Once',
+#         'link': 'everything-everywhere-all-at-once',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/7/4/4/7/4/474474-everything-everywhere-all-at-once-0-1000-0-1500-crop.jpg?v=281f1a041e'
+#     },
+#     {
+#         'title': 'La La Land',
+#         'link': 'la-la-land',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/4/0/3/4/4/240344-la-la-land-0-1000-0-1500-crop.jpg?v=053670ff84'
+#     },
+#     {
+#         'title': 'Joker',
+#         'link': 'joker',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/0/6/7/7/5/406775-joker-0-1000-0-1500-crop.jpg?v=e4ea7f98cc '
+#     },
+#     {
+#         'title': 'Whiplash',
+#         'link': 'whiplash',
+#         'image': 'https://a.ltrbxd.com/resized/sm/upload/cl/dn/kr/f1/4C9LHDxMsoYI0S3iMPZdm3Oevwo-0-1000-0-1500-crop.jpg?v=d13ea36528'
+#     },
+#     {
+#         'title': 'Inception',
+#         'link': 'inception',
+#         'image': 'https://a.ltrbxd.com/resized/sm/upload/sv/95/s9/4j/inception-0-1000-0-1500-crop.jpg?v=30d7224316'
+#     },
+#     {
+#         'title': 'Spider-Man: Into the Spider-Verse',
+#         'link': 'spider-man-into-the-spider-verse',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/5/1/9/4/3/251943-spider-man-into-the-spider-verse-0-1000-0-1500-crop.jpg?v=538fe0ada6'
+#     },
+#     {
+#         'title': 'The Batman',
+#         'link': 'the-Batman',
+#         'image': 'https://a.ltrbxd.com/resized/film-poster/3/4/8/9/1/4/348914-the-batman-0-1000-0-1500-crop.jpg?v=ec12a8b7ce'
+#     },
+#     {
+#         'title': 'The Shawshank Redemption',
+#         'link': 'the-shawshank-redemption',
+#         'image': 'https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-1000-0-1500-crop.jpg?v=8736d1c395'
+#     },
+#     # Add more fallback movies as needed
+# ]
+
+
 FALLBACK_TRENDING = [
     {
-        'title': 'Oppenheimer',
-        'link': 'oppenheimer',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/7/8/4/3/2/8/784328-oppenheimer-0-1000-0-1500-crop.jpg?v=e3c6e7a32c'
+        'title': 'A Minecraft Movie',
+        'link': 'a-minecraft-movie',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/8/5/4/6/9/1/854691-a-minecraft-movie-0-1000-0-1500-crop.jpg?v=074e7fed9e'
     },
     {
-        'title': 'Barbie',
-        'link': 'barbie',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/2/7/7/0/6/4/277064-barbie-0-230-0-345-crop.jpg?v=1b83dc7a71'
+        'title': 'warfare',
+        'link': 'Warfare',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/1/1/2/4/7/0/1/1124701-warfare-0-2000-0-3000-crop.jpg?v=f379233a1b'
     },
     {
-        'title': 'Fight Club',
-        'link': 'fight-club',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/5/1/5/6/8/51568-fight-club-0-1000-0-1500-crop.jpg?v=768b32dfa4'
+        'title': 'Drop',
+        'link': 'drop',
+        'image': 'https://m.media-amazon.com/images/M/MV5BOWUyOTNlMjItNWUyZC00ZGJiLTg3MDMtODJmMGQyMGY3NzU3XkEyXkFqcGc@._V1_SX300.jpg'
     },
     {
-        'title': 'Parasite',
-        'link': 'parasite',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/4/2/6/4/0/6/426406-parasite-0-1000-0-1500-crop.jpg?v=8f5653f710'
+        'title': 'The Last of Us',
+        'link': 'the-last-of-us',
+        'image': 'https://m.media-amazon.com/images/M/MV5BYWI3ODJlMzktY2U5NC00ZjdlLWE1MGItNWQxZDk3NWNjN2RhXkEyXkFqcGc@._V1_SX300.jpg'
     },
     {
-        'title': 'Everything Everywhere All at Once',
-        'link': 'everything-everywhere-all-at-once',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/4/7/4/4/7/4/474474-everything-everywhere-all-at-once-0-1000-0-1500-crop.jpg?v=281f1a041e'
+        'title': 'G20',
+        'link': 'G20',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/9/4/3/3/8/5/943385-g20-0-1000-0-1500-crop.jpg?v=4eb0e8db3c'
     },
     {
-        'title': 'La La Land',
-        'link': 'la-la-land',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/2/4/0/3/4/4/240344-la-la-land-0-1000-0-1500-crop.jpg?v=053670ff84'
+        'title': 'Mickey 17',
+        'link': 'mickey-17',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/6/2/0/2/8/1/620281-mickey-17-0-1000-0-1500-crop.jpg?v=93e4d2af6d'
     },
     {
-        'title': 'Joker',
-        'link': 'joker',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/4/0/6/7/7/5/406775-joker-0-1000-0-1500-crop.jpg?v=e4ea7f98cc '
+        'title': 'Novocaine',
+        'link': 'novocaine',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/1/0/8/1/0/1/7/1081017-novocaine-2025-0-1000-0-1500-crop.jpg?v=bf4021de18'
     },
     {
-        'title': 'Whiplash',
-        'link': 'whiplash',
-        'image': 'https://a.ltrbxd.com/resized/sm/upload/cl/dn/kr/f1/4C9LHDxMsoYI0S3iMPZdm3Oevwo-0-1000-0-1500-crop.jpg?v=d13ea36528'
+        'title': 'Captain America: Brave New World',
+        'link': 'Captain-America-Brave-New-World',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/7/3/8/2/9/2/738292-captain-america-brave-new-world-0-1000-0-1500-crop.jpg?v=97dff5b720'
     },
     {
-        'title': 'Inception',
-        'link': 'inception',
-        'image': 'https://a.ltrbxd.com/resized/sm/upload/sv/95/s9/4j/inception-0-1000-0-1500-crop.jpg?v=30d7224316'
+        'title': 'Death of a Unicorn',
+        'link': 'Death-of-a-Unicorn',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/1/0/3/9/7/3/6/1039736-death-of-a-unicorn-0-1000-0-1500-crop.jpg?v=973751852e'
     },
     {
-        'title': 'Spider-Man: Into the Spider-Verse',
-        'link': 'spider-man-into-the-spider-verse',
-        'image': 'https://a.ltrbxd.com/resized/film-poster/2/5/1/9/4/3/251943-spider-man-into-the-spider-verse-0-1000-0-1500-crop.jpg?v=538fe0ada6'
+        'title': 'The electric state',
+        'link': 'The-electric-state',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/6/9/6/7/2/5/696725-the-electric-state-0-1000-0-1500-crop.jpg?v=0d8eae00e9'
     },
     {
         'title': 'The Batman',
@@ -71,9 +136,9 @@ FALLBACK_TRENDING = [
         'image': 'https://a.ltrbxd.com/resized/film-poster/3/4/8/9/1/4/348914-the-batman-0-1000-0-1500-crop.jpg?v=ec12a8b7ce'
     },
     {
-        'title': 'The Shawshank Redemption',
-        'link': 'the-shawshank-redemption',
-        'image': 'https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-1000-0-1500-crop.jpg?v=8736d1c395'
+        'title': 'Adolescence',
+        'link': 'Adolescence',
+        'image': 'https://a.ltrbxd.com/resized/film-poster/1/3/2/6/8/2/8/1326828-adolescence-2025-0-1000-0-1500-crop.jpg?v=dde7c2d9f0'
     },
     # Add more fallback movies as needed
 ]
