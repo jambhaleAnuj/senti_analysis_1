@@ -8,29 +8,41 @@ for clarity and maintainability.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
-from plotly.utils import PlotlyJSONEncoder
 import plotly.graph_objects as go
+import requests
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from plotly.utils import PlotlyJSONEncoder
 
+from cache import get as cache_get
+from cache import put as cache_put
+from config import FLASK_DEBUG, OMDB_API_KEY
 from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
 from sentiment_analysis import (
     analyze_sentiment,
     analyze_sentiment_vader,
-    generate_word_cloud,
     create_visualizations,
-    plot_word_frequency,
+    generate_word_cloud,
     plot_genre_distribution,
+    plot_word_frequency,
 )
-from youtube_scraper import get_trailer_comments
 from summarizer import generate_summary
-from cache import put as cache_put, get as cache_get
-
-from config import OMDB_API_KEY, FLASK_DEBUG
-import requests
+from youtube_scraper import get_trailer_comments
 
 app = Flask(__name__)
+
+# Common literals
+INDEX_TEMPLATE = 'index.html'
+ERROR_NO_REVIEWS = "No reviews found for this movie."
 
 FALLBACK_TRENDING = [
     {
@@ -107,7 +119,11 @@ def _select_trending_movies() -> List[Dict[str, str]]:
     return api_movies
 
 
-def _perform_full_analysis(reviews: List[str], movie_details: Dict[str, Any], similar_movies: List[Dict[str, Any]]):
+def _perform_full_analysis(
+    reviews: List[str],
+    movie_details: Dict[str, Any],
+    similar_movies: List[Dict[str, Any]],
+):
     """Run sentiment workflow and return redirect response parameters.
 
     Returns a dictionary suitable to pass into url_for('results', **params)
@@ -166,7 +182,9 @@ def _fetch_and_analyze(movie_name: str) -> Dict[str, Any] | None:
     """
     letterboxd_url = movie_name.replace(" ", "-").lower()
     letterboxd_full_url = f"https://letterboxd.com/film/{letterboxd_url}/"
-    reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_name, letterboxd_full_url)
+    reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(
+        movie_name, letterboxd_full_url
+    )
     if not reviews:
         return None
     return _perform_full_analysis(reviews, movie_details, similar_movies)
@@ -180,7 +198,11 @@ def index():
         if movie_name:
             params = _fetch_and_analyze(movie_name)
             if params is None:
-                return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+                return render_template(
+                    INDEX_TEMPLATE,
+                    error=ERROR_NO_REVIEWS,
+                    trending_movies=trending_movies,
+                )
             # store in cache
             cache_key = cache_put(params)
             return redirect(url_for('results_cached', key=cache_key))
@@ -189,9 +211,13 @@ def index():
         if similar_clicked:
             params = _fetch_and_analyze(similar_clicked)
             if params is None:
-                return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
+                return render_template(
+                    INDEX_TEMPLATE,
+                    error=ERROR_NO_REVIEWS,
+                    trending_movies=trending_movies,
+                )
             return redirect(url_for('results', **params))
-    return render_template('index.html', trending_movies=trending_movies)
+    return render_template(INDEX_TEMPLATE, trending_movies=trending_movies)
 
 
 @app.route('/analyze', methods=['POST'])
@@ -205,10 +231,9 @@ def analyze():
         return redirect(url_for('index'))
     params = _fetch_and_analyze(movie_name)
     if params is None:
-        return render_template('index.html', error="No reviews found for this movie.")
+        return render_template(INDEX_TEMPLATE, error=ERROR_NO_REVIEWS)
     cache_key = cache_put(params)
     return redirect(url_for('results_cached', key=cache_key))
-    return render_template('index.html', trending_movies=trending_movies)
 
 
     # (Removed legacy duplicate index implementation.)
@@ -226,11 +251,26 @@ def _build_youtube_sentiment(movie: str) -> Dict[str, Any]:
 
     labels = ['Positive', 'Neutral', 'Negative']
     sizes = [yt_sentiments['positive'], yt_sentiments['neutral'], yt_sentiments['negative']]
-    fig_pie_yt = go.Figure(data=[go.Pie(labels=labels, values=sizes, hoverinfo='label+percent', textinfo='percent')])
+    fig_pie_yt = go.Figure(
+        data=[
+            go.Pie(
+                labels=labels,
+                values=sizes,
+                hoverinfo='label+percent',
+                textinfo='percent',
+            )
+        ]
+    )
     pie_json_yt = json.dumps(fig_pie_yt, cls=PlotlyJSONEncoder)
-    fig_bar_yt = go.Figure(data=[go.Bar(x=labels, y=sizes, marker=dict(color=['green', 'gray', 'red']))])
+    fig_bar_yt = go.Figure(
+        data=[go.Bar(x=labels, y=sizes, marker={"color": ['green', 'gray', 'red']})]
+    )
     bar_json_yt = json.dumps(fig_bar_yt, cls=PlotlyJSONEncoder)
-    word_freq_yt = plot_word_frequency([c['text'] for c in trailer_comments], None, {'title': movie}) if trailer_comments else None
+    word_freq_yt = (
+    plot_word_frequency([c['text'] for c in trailer_comments], {'title': movie})
+        if trailer_comments
+        else None
+    )
     word_freq_json_yt = json.dumps(word_freq_yt, cls=PlotlyJSONEncoder) if word_freq_yt else None
     return {
         "pie_chart_yt": pie_json_yt,
@@ -276,15 +316,25 @@ def results():  # backward compatibility (legacy query param path)
         reviews = json.loads(request.args.get('rev', '[]'))
 
         # Build YouTube charts
-        yt_payload = _build_youtube_sentiment(movie) if movie else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
+        yt_payload = (
+            _build_youtube_sentiment(movie)
+            if movie
+            else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
+        )
 
         # Genre distribution
         genre_fig = plot_genre_distribution(genres) if genres else None
         genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder) if genre_fig else None
 
         # Word frequency for reviews (overall)
-        word_freq_plot_html = plot_word_frequency(reviews, None, {"title": movie}) if reviews else None
-        word_freq_plot_json = json.dumps(word_freq_plot_html, cls=PlotlyJSONEncoder) if word_freq_plot_html else None
+        word_freq_plot_html = (
+            plot_word_frequency(reviews, {"title": movie}) if reviews else None
+        )
+        word_freq_plot_json = (
+            json.dumps(word_freq_plot_html, cls=PlotlyJSONEncoder)
+            if word_freq_plot_html
+            else None
+        )
 
         fig_pie, fig_bar, fig_hist = create_visualizations(
             {"positive": positive, "neutral": neutral, "negative": negative},
@@ -295,7 +345,15 @@ def results():  # backward compatibility (legacy query param path)
         bar_json = json.dumps(fig_bar, cls=PlotlyJSONEncoder)
         hist_json = json.dumps(fig_hist, cls=PlotlyJSONEncoder)
 
-        summary = generate_summary(movie, plot, {"positive": positive, "neutral": neutral, "negative": negative}) if movie else None
+        summary = (
+            generate_summary(
+                movie,
+                plot,
+                {"positive": positive, "neutral": neutral, "negative": negative},
+            )
+            if movie
+            else None
+        )
 
         return render_template(
             'results.html',
@@ -363,10 +421,26 @@ def results_cached(key: str):  # noqa: C901
         vader_positive = data.get('vader_positive', 0)
         vader_neutral = data.get('vader_neutral', 0)
         vader_negative = data.get('vader_negative', 0)
-        reviews = json.loads(data.get('rev', '[]')) if isinstance(data.get('rev'), str) else data.get('rev', [])
-        positive_keywords = list(json.loads(data.get('positive_keywords', '{}')).items()) if isinstance(data.get('positive_keywords'), str) else data.get('positive_keywords', [])
-        negative_keywords = list(json.loads(data.get('negative_keywords', '{}')).items()) if isinstance(data.get('negative_keywords'), str) else data.get('negative_keywords', [])
-        similar_movies = json.loads(data.get('similar_movies', '[]')) if isinstance(data.get('similar_movies'), str) else data.get('similar_movies', [])
+        reviews = (
+            json.loads(data.get('rev', '[]'))
+            if isinstance(data.get('rev'), str)
+            else data.get('rev', [])
+        )
+        positive_keywords = (
+            list(json.loads(data.get('positive_keywords', '{}')).items())
+            if isinstance(data.get('positive_keywords'), str)
+            else data.get('positive_keywords', [])
+        )
+        negative_keywords = (
+            list(json.loads(data.get('negative_keywords', '{}')).items())
+            if isinstance(data.get('negative_keywords'), str)
+            else data.get('negative_keywords', [])
+        )
+        similar_movies = (
+            json.loads(data.get('similar_movies', '[]'))
+            if isinstance(data.get('similar_movies'), str)
+            else data.get('similar_movies', [])
+        )
 
         # Rebuild charts on demand (lightweight) rather than storing them
         fig_pie, fig_bar, fig_hist = create_visualizations(
@@ -383,10 +457,22 @@ def results_cached(key: str):  # noqa: C901
             genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder)
         word_freq_plot_json = None
         if reviews:
-            wf = plot_word_frequency(reviews, None, {"title": movie})
+            wf = plot_word_frequency(reviews, {"title": movie})
             word_freq_plot_json = json.dumps(wf, cls=PlotlyJSONEncoder)
-        yt_payload = _build_youtube_sentiment(movie) if movie else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
-        summary = generate_summary(movie, plot, {"positive": positive, "neutral": neutral, "negative": negative}) if movie else None
+        yt_payload = (
+            _build_youtube_sentiment(movie)
+            if movie
+            else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
+        )
+        summary = (
+            generate_summary(
+                movie,
+                plot,
+                {"positive": positive, "neutral": neutral, "negative": negative},
+            )
+            if movie
+            else None
+        )
 
         return render_template(
             'results.html',
@@ -430,7 +516,7 @@ def results_cached(key: str):  # noqa: C901
 @app.route('/get_movie_suggestions', methods=['GET'])
 def get_movie_suggestions():
     query = request.args.get('query', '').strip()
-    
+
     # If the query is less than 3 characters, don't make an API call
     if len(query) < 3:
         return jsonify(suggestions=[])
@@ -438,7 +524,8 @@ def get_movie_suggestions():
     # Fetch suggestions from OMDb API
     omdb_url = f"http://www.omdbapi.com/?s={query}&apikey={OMDB_API_KEY}"
     response = requests.get(omdb_url)
-    
+
+
     # If the response is OK and there are search results
     if response.status_code == 200:
         data = response.json()
@@ -446,7 +533,7 @@ def get_movie_suggestions():
             # Extract movie titles and return them as suggestions
             suggestions = [{'title': movie['Title']} for movie in data.get('Search', [])]
             return jsonify(suggestions=suggestions)
-        
+
     return jsonify(suggestions=[])
 
 if __name__ == '__main__':

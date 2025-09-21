@@ -7,8 +7,8 @@ summary so the UI still shows a meaningful block.
 """
 from __future__ import annotations
 
-from typing import List, Dict, Tuple
 import re
+from typing import Dict, Tuple
 
 try:  # Optional import pattern – real integration can be added later
     import google.generativeai as genai  # type: ignore
@@ -20,9 +20,10 @@ import os
 GEMMA_API_KEY = os.getenv("GEMMA_API_KEY")  # document in .env.example
 
 SYSTEM_PROMPT = (
-    "You are an assistant that composes concise, neutral movie review summaries in natural, flowing prose. "
-    "Blend audience sentiment context with a spoiler‑safe synopsis. Avoid headings, labels, or bullet points. "
-    "Write 2–4 sentences and keep it under 120 words."
+    "You are an assistant that composes concise, neutral movie review summaries in "
+    "natural, flowing prose. Blend audience sentiment context with a spoiler‑safe "
+    "synopsis. Avoid headings, labels, or bullet points. Write 2–4 sentences and "
+    "keep it under 120 words."
 )
 
 
@@ -54,7 +55,10 @@ def _extract_likes_dislikes(sentiments: Dict[str, int]) -> Tuple[str, str]:
     return likes, dislikes
 
 
-_SPOILER_CLEAN_PAT = re.compile(r"(kills?|dies|death|betrayal|murder|twist|identity|secret|culprit|final battle)", re.IGNORECASE)
+_SPOILER_CLEAN_PAT = re.compile(
+    r"(kills?|dies|death|betrayal|murder|twist|identity|secret|culprit|final battle)",
+    re.IGNORECASE,
+)
 
 
 def _sanitize_plot(plot: str | None) -> str:
@@ -100,9 +104,10 @@ def generate_summary(movie_title: str, plot: str | None, sentiments: Dict[str, i
             f"Movie: {movie_title}\n"
             f"Sentiment counts: {sentiments}.\n"
             f"Plot: {plot}\n"
-            "Write 2–4 sentences of natural prose (no headings or lists). Start with the overall audience tilt using the counts, "
-            "then briefly mention what people are liking and disliking, and end with a spoiler‑safe synopsis (avoid late‑act reveals). "
-            "Keep it under 110 words."
+            "Write 2–4 sentences of natural prose (no headings or lists). Start with the "
+            "overall audience tilt using the counts, then briefly mention what people are "
+            "liking and disliking, and end with a spoiler‑safe synopsis (avoid late‑act "
+            "reveals). Keep it under 110 words."
         )
         resp = model.generate_content([SYSTEM_PROMPT, prompt])
         text = getattr(resp, "text", None) or "".join(getattr(resp, "candidates", []))

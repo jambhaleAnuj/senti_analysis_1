@@ -8,7 +8,7 @@ application to function in educational / demo contexts without API quota.
 from __future__ import annotations
 
 import os
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 

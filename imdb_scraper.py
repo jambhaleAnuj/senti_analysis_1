@@ -1,16 +1,11 @@
-import json
+import urllib.parse
+
 import requests
 from bs4 import BeautifulSoup
-import re
-import urllib.parse
-from dotenv import load_dotenv
-import os
 
-# load_dotenv()
-# TMDB_API = os.getenv("TMDB_API")
+from config import OMDB_API_KEY, TMDB_BEARER
 
-
-OMDB_API_KEY = '36650a58'
+HTML_PARSER = 'html.parser'
 
 def fetch_similar_movies(letterboxd_url):
     similar_movies = []
@@ -18,11 +13,15 @@ def fetch_similar_movies(letterboxd_url):
     try:
         similar_url = f"{letterboxd_url}/similar"
         headers = {
-            'User -Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/91.0.4472.124 Safari/537.36'
+            )
         }
 
         response = requests.get(similar_url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, HTML_PARSER)
 
         similar_grid = soup.find('ul', class_='poster-list')
         if similar_grid:
@@ -33,7 +32,7 @@ def fetch_similar_movies(letterboxd_url):
                     film_poster = item.find('div', class_='film-poster')
                     if film_poster:
                         movie_title = film_poster.find('img')['alt']
-                        movie_url = film_poster['data-target-link']
+                        _movie_url = film_poster['data-target-link']
 
                         omdb_url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
                         omdb_response = requests.get(omdb_url)
@@ -80,7 +79,7 @@ def fetch_letterboxd_reviews(letterboxd_url):
             print(f"Page {page} failed to load.")
             break
 
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(response.content, HTML_PARSER)
         reviews = soup.find_all('div', class_='body-text -prose js-review-body js-collapsible-text')
 
         if not reviews:
@@ -97,89 +96,78 @@ def fetch_letterboxd_reviews(letterboxd_url):
 
 def scrape_user_reviews(movie_name):
     """Scrapes user reviews from Rotten Tomatoes for both movies (/m/) and TV shows (/t/)."""
-    
+
     base_url = "https://www.rottentomatoes.com"
     slug = urllib.parse.quote(movie_name.lower().replace(" ", "_"))
-
     possible_paths = [f"/m/{slug}", f"/tv/{slug}"]
-    user_reviews = []
+    headers = {"User-Agent": "Mozilla/5.0"}
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    user_reviews = _fetch_rt_reviews_for_paths(base_url, possible_paths, headers)
+    if user_reviews:
+        return user_reviews
 
-    # First attempt: try both paths (movie and TV show)
-    for path in possible_paths:
+    # Retry with year if first attempt failed
+    omdb_data = get_omdb_data(movie_name)
+    movie_year = omdb_data.get('Year')
+    if movie_year:
+        paths_with_year = [f"{p}_{movie_year}" for p in possible_paths]
+        return _fetch_rt_reviews_for_paths(base_url, paths_with_year, headers)
+    return []
+
+
+def _fetch_rt_reviews_for_paths(base_url: str, paths: list[str], headers: dict) -> list[str]:
+    """Helper to fetch RT user reviews for a list of candidate paths."""
+    all_reviews: list[str] = []
+    for path in paths:
         full_url = f"{base_url}{path}/reviews?type=user"
-        print(f"Trying: {full_url}")
         response = requests.get(full_url, headers=headers)
-
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            reviews = soup.find_all('div', class_='audience-review-row')
-
-            for review in reviews:
-                review_text = review.find('p', class_='audience-reviews__review js-review-text')
-                if review_text:
-                    user_reviews.append(review_text.get_text(strip=True))
-
-    # If no reviews are found, attempt to retry with the movie year
-    if not user_reviews:
-        # You would need a function to get movie details, like 'get_omdb_data()'
-        omdb_data = get_omdb_data(movie_name)  # Assume this function gets the movie year
-        movie_year = omdb_data.get('Year')
-
-        if movie_year:
-            print(f"Movie year found: {movie_year}")
-            for path in possible_paths:
-                # Try with the year appended to the path for both movie and TV show
-                full_url = f"{base_url}{path}_{movie_year}/reviews?type=user"
-                print(f"Trying with year: {full_url}")
-                response = requests.get(full_url, headers=headers)
-
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.content, 'html.parser')
-                    reviews = soup.find_all('div', class_='audience-review-row')
-
-                    for review in reviews:
-                        review_text = review.find('p', class_='audience-reviews__review js-review-text')
-                        if review_text:
-                            user_reviews.append(review_text.get_text(strip=True))
-
-        else:
-            print("No movie year found. Could not retry with year.")
-
-    # If no reviews are found even after retrying with the year
-    if not user_reviews:
-        print(f"No reviews found for {movie_name} on Rotten Tomatoes.")
-    # print("ROTTENT TOMATOES: \n",user_reviews)
-    return user_reviews
+        if response.status_code != 200:
+            continue
+        soup = BeautifulSoup(response.content, HTML_PARSER)
+        reviews = soup.find_all('div', class_='audience-review-row')
+        for review in reviews:
+            review_text = review.find('p', class_='audience-reviews__review js-review-text')
+            if review_text:
+                all_reviews.append(review_text.get_text(strip=True))
+    return all_reviews
 
 
 def get_tmdb_reviews(getmovie_name):
-    movie_name = getmovie_name
-    movie_name.replace(" ","%20")
-    url = f"https://api.themoviedb.org/3/search/movie?query={movie_name}&include_adult=false&language=en-US&page=1"
+    """Fetch reviews from TMDB. Returns a list of review contents.
+
+    Requires TMDB_BEARER to be set in the environment; otherwise returns [].
+    """
+    if not TMDB_BEARER:
+        return []
+
+    movie_name = getmovie_name.replace(" ", "%20")
+    url = (
+        "https://api.themoviedb.org/3/search/movie?query="
+        f"{movie_name}&include_adult=false&language=en-US&page=1"
+    )
 
     headers = {
         "accept": "application/json",
-        f"Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzMDExMTgzMjU1Njc5MWM2OThhMzcwYjdlNmYyMzc4NCIsIm5iZiI6MTc0NTE2MTY0Ny44MDA5OTk5LCJzdWIiOiI2ODA1MGRhZjZlMWE3NjllODFlZTI1MmUiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.wp7NbWIr8Itm1ZCmVeVIq6JcVZiwnhmencqG5GE-N_o"
+        "Authorization": f"Bearer {TMDB_BEARER}",
     }
 
-    response = requests.get(url, headers=headers)
-    result = response.json().get('results')
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        result = response.json().get('results', [])
+        if not result:
+            return []
+        movie_id = result[0]['id']
 
-    movie_id = result[0]['id']
-    print(movie_id)
-
-
-    url_for_review = f"https://api.themoviedb.org/3/movie/{movie_id}/reviews?language=en-US&page=1"
-
-    response = requests.get(url_for_review, headers=headers)
-    result = response.json().get('results')
-    tmdb_reviews = result[0]['content']
-    print(tmdb_reviews)
-    return tmdb_reviews
+        url_for_review = (
+            f"https://api.themoviedb.org/3/movie/{movie_id}/reviews?language=en-US&page=1"
+        )
+        response = requests.get(url_for_review, headers=headers, timeout=10)
+        response.raise_for_status()
+        results = response.json().get('results', [])
+        return [r.get('content', '') for r in results if r.get('content')]
+    except Exception:
+        return []
 
 
 
@@ -196,11 +184,9 @@ def fetch_movie_reviews_and_details(movie_title, letterboxd_url):
     rt_reviews = scrape_user_reviews(movie_title)
     review_texts.extend(rt_reviews)
 
-    # tmdb_review = get_tmdb_reviews(movie_title)
-    # print(tmdb_review)
-    # review_texts.extend(tmdb_review)
-    # print("Added TMDB reviews")
-    # print(review_texts)
+    # Optionally include TMDB reviews if token configured
+    # tmdb_reviews = get_tmdb_reviews(movie_title)
+    # review_texts.extend(tmdb_reviews)
 
     similar_movies = fetch_similar_movies(letterboxd_url)
 
