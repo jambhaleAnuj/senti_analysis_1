@@ -30,6 +30,6 @@ jobs:
             - name: Lint
               run: ruff check .
             - name: Tests
-              run: pytest -q
+              run: python -m pytest -q
             - name: Security (Bandit)
               run: bandit -r . -q || true

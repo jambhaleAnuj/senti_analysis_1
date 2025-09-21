@@ -45,10 +45,11 @@ def analyze_sentiment(reviews):
     for review in reviews:
         analysis = TextBlob(review)
         polarity_scores.append(analysis.sentiment.polarity)
-        if analysis.sentiment.polarity > 0:
+        # Use a neutral window to avoid over-classifying mild/mixed texts
+        if analysis.sentiment.polarity > 0.2:
             sentiments['positive'] += 1
             positive_reviews.append(review)
-        elif analysis.sentiment.polarity == 0:
+        elif -0.2 <= analysis.sentiment.polarity <= 0.2:
             sentiments['neutral'] += 1
             neutral_reviews.append(review)
         else:
@@ -93,11 +94,27 @@ def analyze_sentiment_vader(reviews: List[str]):
     return agg, scores
 
 def extract_keywords(reviews, _sentiment):
-    stop_words = set(stopwords.words('english'))
-    words = []
+    """Extract top keywords from reviews with graceful NLTK fallbacks.
+
+    If NLTK resources are unavailable (e.g., in CI or offline), falls back to a
+    minimal tokenizer and stopword list so tests remain reliable.
+    """
+    try:
+        stop_words = set(stopwords.words('english'))
+    except Exception:
+        stop_words = {
+            'the', 'and', 'a', 'an', 'of', 'to', 'in', 'it', 'is', 'was', 'for',
+            'on', 'that', 'with', 'as', 'this', 'but', 'be', 'by', 'or', 'are'
+        }
+
+    words: list[str] = []
     for review in reviews:
-        tokens = word_tokenize(review.lower())
-        words.extend([word for word in tokens if word.isalnum() and word not in stop_words])
+        text = review.lower()
+        try:
+            tokens = word_tokenize(text)
+        except Exception:
+            tokens = [t for t in text.replace('\n', ' ').split(' ') if t]
+        words.extend([w for w in tokens if w.isalnum() and w not in stop_words])
     return Counter(words).most_common(10)
 
 # Generate a word cloud from reviews
