@@ -116,6 +116,12 @@
                   <h3 class="h4">Plot</h3>
                   <p>{{ plot }}</p>
                 </div>
+                {% if summary %}
+                <div class="mt-4">
+                  <h3 class="h4">AI Summary</h3>
+                  <p>{{ summary }}</p>
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -325,6 +331,13 @@
                   <li>Positive Reviews: {{ positive }}</li>
                   <li>Neutral Reviews: {{ neutral }}</li>
                   <li>Negative Reviews: {{ negative }}</li>
+                </ul>
+                <hr/>
+                <h3 class="h5">VADER Comparison</h3>
+                <ul class="list-unstyled small">
+                  <li>VADER Positive: {{ vader_positive }}</li>
+                  <li>VADER Neutral: {{ vader_neutral }}</li>
+                  <li>VADER Negative: {{ vader_negative }}</li>
                 </ul>
               </div>
             </div>

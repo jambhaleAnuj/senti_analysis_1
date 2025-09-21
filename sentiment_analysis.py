@@ -14,12 +14,18 @@ import plotly.express as px
 from better_profanity import profanity
 import spacy
 import os
+from typing import List, Dict, Tuple
+try:
+    from nltk.sentiment import SentimentIntensityAnalyzer  # VADER
+except Exception:  # pragma: no cover
+    SentimentIntensityAnalyzer = None  # type: ignore
 
 matplotlib.use('Agg')
 
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('punkt_tab')
+nltk.download('vader_lexicon')
 
 # Check if spaCy's English model is installed, and download if necessary
 try:
@@ -57,6 +63,30 @@ def analyze_sentiment(reviews):
     # print("...........")
     # print("Negative Reviews: ",negative_reviews)
     return sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords
+
+
+def analyze_sentiment_vader(reviews: List[str]):
+    """Secondary sentiment engine using VADER for comparative analysis.
+
+    Returns a dict of aggregate counts and detailed scores per review.
+    If VADER is not available (dependency missing) falls back to zeros.
+    """
+    if not SentimentIntensityAnalyzer:
+        return {"positive": 0, "neutral": 0, "negative": 0}, []
+    sia = SentimentIntensityAnalyzer()
+    scores: List[Dict[str, float]] = []
+    agg = {"positive": 0, "neutral": 0, "negative": 0}
+    for r in reviews:
+        s = sia.polarity_scores(r)
+        scores.append(s)
+        compound = s['compound']
+        if compound > 0.05:
+            agg['positive'] += 1
+        elif compound < -0.05:
+            agg['negative'] += 1
+        else:
+            agg['neutral'] += 1
+    return agg, scores
 
 def extract_keywords(reviews, sentiment):
     stop_words = set(stopwords.words('english'))

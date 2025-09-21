@@ -1,83 +1,36 @@
-import json
-from plotly.utils import PlotlyJSONEncoder
-import plotly.express as px
-import plotly.io as pio
-import plotly.graph_objects as go
-from flask import Flask, render_template, request, redirect, url_for
-from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
-from sentiment_analysis import analyze_sentiment, generate_word_cloud, create_visualizations,plot_word_frequency,plot_genre_distribution
-import json
-from flask import jsonify
-from youtube_scraper import search_trailer_video_id, get_trailer_comments
+"""Flask application entrypoint.
 
+This module handles routing, orchestrates data fetching, sentiment analysis,
+and visualization assembly. Cleaned from large historical commented code blocks
+for clarity and maintainability.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any, Dict, List, Tuple
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
+from plotly.utils import PlotlyJSONEncoder
+import plotly.graph_objects as go
+
+from imdb_scraper import fetch_movie_reviews_and_details, fetch_trending_movies
+from sentiment_analysis import (
+    analyze_sentiment,
+    analyze_sentiment_vader,
+    generate_word_cloud,
+    create_visualizations,
+    plot_word_frequency,
+    plot_genre_distribution,
+)
+from youtube_scraper import get_trailer_comments
+from summarizer import generate_summary
+from cache import put as cache_put, get as cache_get
+
+from config import OMDB_API_KEY, FLASK_DEBUG
 import requests
 
 app = Flask(__name__)
-
-# FALLBACK_TRENDING = [
-#     {
-#         'title': 'Oppenheimer',
-#         'link': 'oppenheimer',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/7/8/4/3/2/8/784328-oppenheimer-0-1000-0-1500-crop.jpg?v=e3c6e7a32c'
-#     },
-#     {
-#         'title': 'Barbie',
-#         'link': 'barbie',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/7/7/0/6/4/277064-barbie-0-230-0-345-crop.jpg?v=1b83dc7a71'
-#     },
-#     {
-#         'title': 'Fight Club',
-#         'link': 'fight-club',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/5/1/5/6/8/51568-fight-club-0-1000-0-1500-crop.jpg?v=768b32dfa4'
-#     },
-#     {
-#         'title': 'Parasite',
-#         'link': 'parasite',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/2/6/4/0/6/426406-parasite-0-1000-0-1500-crop.jpg?v=8f5653f710'
-#     },
-#     {
-#         'title': 'Everything Everywhere All at Once',
-#         'link': 'everything-everywhere-all-at-once',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/7/4/4/7/4/474474-everything-everywhere-all-at-once-0-1000-0-1500-crop.jpg?v=281f1a041e'
-#     },
-#     {
-#         'title': 'La La Land',
-#         'link': 'la-la-land',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/4/0/3/4/4/240344-la-la-land-0-1000-0-1500-crop.jpg?v=053670ff84'
-#     },
-#     {
-#         'title': 'Joker',
-#         'link': 'joker',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/4/0/6/7/7/5/406775-joker-0-1000-0-1500-crop.jpg?v=e4ea7f98cc '
-#     },
-#     {
-#         'title': 'Whiplash',
-#         'link': 'whiplash',
-#         'image': 'https://a.ltrbxd.com/resized/sm/upload/cl/dn/kr/f1/4C9LHDxMsoYI0S3iMPZdm3Oevwo-0-1000-0-1500-crop.jpg?v=d13ea36528'
-#     },
-#     {
-#         'title': 'Inception',
-#         'link': 'inception',
-#         'image': 'https://a.ltrbxd.com/resized/sm/upload/sv/95/s9/4j/inception-0-1000-0-1500-crop.jpg?v=30d7224316'
-#     },
-#     {
-#         'title': 'Spider-Man: Into the Spider-Verse',
-#         'link': 'spider-man-into-the-spider-verse',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/2/5/1/9/4/3/251943-spider-man-into-the-spider-verse-0-1000-0-1500-crop.jpg?v=538fe0ada6'
-#     },
-#     {
-#         'title': 'The Batman',
-#         'link': 'the-Batman',
-#         'image': 'https://a.ltrbxd.com/resized/film-poster/3/4/8/9/1/4/348914-the-batman-0-1000-0-1500-crop.jpg?v=ec12a8b7ce'
-#     },
-#     {
-#         'title': 'The Shawshank Redemption',
-#         'link': 'the-shawshank-redemption',
-#         'image': 'https://a.ltrbxd.com/resized/sm/upload/7l/hn/46/uz/zGINvGjdlO6TJRu9wESQvWlOKVT-0-1000-0-1500-crop.jpg?v=8736d1c395'
-#     },
-#     # Add more fallback movies as needed
-# ]
-
 
 FALLBACK_TRENDING = [
     {
@@ -143,441 +96,154 @@ FALLBACK_TRENDING = [
     # Add more fallback movies as needed
 ]
 
-# @app.route('/', methods=['GET', 'POST'])
-# def index():
-#     trending_movies = fetch_trending_movies()
-#     print(trending_movies)
+def _select_trending_movies() -> List[Dict[str, str]]:
+    """Return trending movies falling back to static list if API fails.
 
-  
-        
-#     if not trending_movies:
-#         print("Both methods failed, using fallback data")
-#         trending_movies = FALLBACK_TRENDING
-
-#     if request.method == 'POST':
-#         movie_title = request.form['letterboxd_url']
-#         letterboxd_url = request.form['letterboxd_url']
-#         letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-
-#         letterboxd_urls = 'https://letterboxd.com/film/'+letterboxd_url
-        
-#         reviews, movie_details,similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
-        
-#         print(similar_movies)
-#         if reviews:
-#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-#             generate_word_cloud(reviews)
-#             create_visualizations(sentiments, polarity_scores, movie_details)
-           
-            
-#             positive_keywords_json = json.dumps(dict(positive_keywords))
-#             negative_keywords_json = json.dumps(dict(negative_keywords))
-#             reviews_json = json.dumps(reviews)
-#             return redirect(url_for('results', 
-#                                     movie=movie_details['title'],
-#                                     year=movie_details['year'],
-#                                     rating=movie_details['rating'],
-#                                     genres=movie_details['genres'],
-#                                     plot=movie_details['plot'],
-#                                     actors=movie_details['actor'],
-#                                     poster=movie_details['poster'],
-#                                     language=movie_details['language'],
-#                                     country=movie_details['country'],
-#                                     writer=movie_details['writer'],
-#                                     awards=movie_details['awards'],
-#                                     director=movie_details['director'],
-#                                     box_office=movie_details['box_office'],
-#                                     release_date=movie_details['release_date'],
-#                                     positive=len(positive_reviews),
-#                                     neutral=len(neutral_reviews),
-#                                     negative=len(negative_reviews),
-#                                     total=len(reviews),
-#                                     rev = reviews_json,
-#                                     positive_keywords=positive_keywords_json,
-#                                     negative_keywords=negative_keywords_json,
-#                                     similar_movies=json.dumps(similar_movies)
-
-#                                    ))
-#         else:
-#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-    
-    
-#     else:
-#         # Handle the case when coming from a similar movie link
-#         letterboxd_url = request.args.get('letterboxd_url')
-#         if letterboxd_url:
-#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-#             letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
-            
-#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_urls)
-            
-    
-#     return render_template('index.html', trending_movies=trending_movies)
+    For now always uses fallback if fetch returns empty or None.
+    """
+    api_movies = fetch_trending_movies()
+    if not api_movies:
+        return FALLBACK_TRENDING
+    return api_movies
 
 
-# @app.route('/', methods=['GET', 'POST'])
-# def index():
-#     trending_movies = fetch_trending_movies()
-#     print(trending_movies)
+def _perform_full_analysis(reviews: List[str], movie_details: Dict[str, Any], similar_movies: List[Dict[str, Any]]):
+    """Run sentiment workflow and return redirect response parameters.
 
-#     if not trending_movies:
-#         print("Both methods failed, using fallback data")
-#         trending_movies = FALLBACK_TRENDING
+    Returns a dictionary suitable to pass into url_for('results', **params)
+    (temporary approach until server-side session/cache is implemented).
+    """
+    (
+        sentiments,
+        positive_reviews,
+        neutral_reviews,
+        negative_reviews,
+        polarity_scores,
+        positive_keywords,
+        negative_keywords,
+    ) = analyze_sentiment(reviews)
 
-#     if request.method == 'POST':
-#         # For movie search via letterboxd URL
-#         movie_title = request.form['letterboxd_url']
-#         letterboxd_url = request.form['letterboxd_url']
-#         letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-#         letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
-        
-#         reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_urls)
+    vader_counts, _vader_detail = analyze_sentiment_vader(reviews)
 
-#         print(similar_movies)
-#         if reviews:
-#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-#             generate_word_cloud(reviews)
-#             create_visualizations(sentiments, polarity_scores, movie_details)
+    # Side-effect visual assets
+    generate_word_cloud(reviews)
+    create_visualizations(sentiments, polarity_scores, movie_details)
 
-#             positive_keywords_json = json.dumps(dict(positive_keywords))
-#             negative_keywords_json = json.dumps(dict(negative_keywords))
-#             reviews_json = json.dumps(reviews)
-
-#             return redirect(url_for('results', 
-#                                     movie=movie_details['title'],
-#                                     year=movie_details['year'],
-#                                     rating=movie_details['rating'],
-#                                     genres=movie_details['genres'],
-#                                     plot=movie_details['plot'],
-#                                     actors=movie_details['actor'],
-#                                     poster=movie_details['poster'],
-#                                     language=movie_details['language'],
-#                                     country=movie_details['country'],
-#                                     writer=movie_details['writer'],
-#                                     awards=movie_details['awards'],
-#                                     director=movie_details['director'],
-#                                     box_office=movie_details['box_office'],
-#                                     release_date=movie_details['release_date'],
-#                                     positive=len(positive_reviews),
-#                                     neutral=len(neutral_reviews),
-#                                     negative=len(negative_reviews),
-#                                     total=len(reviews),
-#                                     rev=reviews_json,
-#                                     positive_keywords=positive_keywords_json,
-#                                     negative_keywords=negative_keywords_json,
-#                                     similar_movies=json.dumps(similar_movies)
-#                                    ))
-#         else:
-#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-
-#     else:
-#         # Handle the case when coming from a similar movie link (GET request)
-#         letterboxd_url = request.args.get('letterboxd_url')
-#         if letterboxd_url:
-#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-#             letterboxd_urls = 'https://letterboxd.com/film/' + letterboxd_url
-            
-#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_urls)
-
-#             if reviews:
-#                 sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-#                 generate_word_cloud(reviews)
-#                 create_visualizations(sentiments, polarity_scores, movie_details)
-
-#                 positive_keywords_json = json.dumps(dict(positive_keywords))
-#                 negative_keywords_json = json.dumps(dict(negative_keywords))
-#                 reviews_json = json.dumps(reviews)
-
-#                 return redirect(url_for('results', 
-#                                         movie=movie_details['title'],
-#                                         year=movie_details['year'],
-#                                         rating=movie_details['rating'],
-#                                         genres=movie_details['genres'],
-#                                         plot=movie_details['plot'],
-#                                         actors=movie_details['actor'],
-#                                         poster=movie_details['poster'],
-#                                         language=movie_details['language'],
-#                                         country=movie_details['country'],
-#                                         writer=movie_details['writer'],
-#                                         awards=movie_details['awards'],
-#                                         director=movie_details['director'],
-#                                         box_office=movie_details['box_office'],
-#                                         release_date=movie_details['release_date'],
-#                                         positive=len(positive_reviews),
-#                                         neutral=len(neutral_reviews),
-#                                         negative=len(negative_reviews),
-#                                         total=len(reviews),
-#                                         rev=reviews_json,
-#                                         positive_keywords=positive_keywords_json,
-#                                         negative_keywords=negative_keywords_json,
-#                                         similar_movies=json.dumps(similar_movies)
-#                                        ))
-#             else:
-#                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-        
-#     return render_template('index.html', trending_movies=trending_movies)
+    return {
+        "movie": movie_details["title"],
+        "year": movie_details["year"],
+        "rating": movie_details["rating"],
+        "genres": movie_details["genres"],
+        "plot": movie_details["plot"],
+        "actors": movie_details["actor"],
+        "poster": movie_details["poster"],
+        "language": movie_details["language"],
+        "country": movie_details["country"],
+        "writer": movie_details["writer"],
+        "awards": movie_details["awards"],
+        "director": movie_details["director"],
+        "box_office": movie_details["box_office"],
+        "release_date": movie_details["release_date"],
+        "positive": len(positive_reviews),
+        "neutral": len(neutral_reviews),
+        "negative": len(negative_reviews),
+        "total": len(reviews),
+        "rev": json.dumps(reviews),
+        "positive_keywords": json.dumps(dict(positive_keywords)),
+        "negative_keywords": json.dumps(dict(negative_keywords)),
+        "similar_movies": json.dumps(similar_movies),
+        # VADER counts
+        "vader_positive": vader_counts.get("positive", 0),
+        "vader_neutral": vader_counts.get("neutral", 0),
+        "vader_negative": vader_counts.get("negative", 0),
+    }
 
 
-# @app.route('/', methods=['GET', 'POST'])
-# def index():
-#     # Fetch the trending movies
-#     trending_movies = fetch_trending_movies()
+def _fetch_and_analyze(movie_name: str) -> Dict[str, Any] | None:
+    """Fetch reviews/details and run analysis pipeline, returning redirect params.
 
-#     if not trending_movies:
-#         trending_movies = FALLBACK_TRENDING
-
-#     if request.method == 'POST':
-#         # Handle search request from the form
-#         movie_title = request.form['letterboxd_url']
-#         letterboxd_url = movie_title.replace(' ', '-').lower()
-
-#         # Construct the full URL for the movie (search case)
-#         letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
-
-#         # Fetch reviews and details for the searched movie
-#         reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_title, letterboxd_full_url)
-
-#         # Ensure each similar movie has the full URL
-#         for movie in similar_movies:
-#             movie['url'] = f'https://letterboxd.com/film/{letterboxd_url}/'
-
-#         if reviews:
-#             sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-#             generate_word_cloud(reviews)
-#             create_visualizations(sentiments, polarity_scores, movie_details)
-            
-#             positive_keywords_json = json.dumps(dict(positive_keywords))
-#             negative_keywords_json = json.dumps(dict(negative_keywords))
-#             reviews_json = json.dumps(reviews)
-            
-#             # Redirect to the results page
-#             return redirect(url_for('results', 
-#                                     movie=movie_details['title'],
-#                                     year=movie_details['year'],
-#                                     rating=movie_details['rating'],
-#                                     genres=movie_details['genres'],
-#                                     plot=movie_details['plot'],
-#                                     actors=movie_details['actor'],
-#                                     poster=movie_details['poster'],
-#                                     language=movie_details['language'],
-#                                     country=movie_details['country'],
-#                                     writer=movie_details['writer'],
-#                                     awards=movie_details['awards'],
-#                                     director=movie_details['director'],
-#                                     box_office=movie_details['box_office'],
-#                                     release_date=movie_details['release_date'],
-#                                     positive=len(positive_reviews),
-#                                     neutral=len(neutral_reviews),
-#                                     negative=len(negative_reviews),
-#                                     total=len(reviews),
-#                                     rev=reviews_json,
-#                                     positive_keywords=positive_keywords_json,
-#                                     negative_keywords=negative_keywords_json,
-#                                     similar_movies=json.dumps(similar_movies)
-#                                    ))
-#         else:
-#             # In case no reviews are found, show an error on the homepage
-#             return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-
-#     else:
-#         # Handle the case when coming from a similar movie link
-#         letterboxd_url = request.args.get('letterboxd_url')
-#         if letterboxd_url:
-#             letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-            
-#             # Construct the full URL for the similar movie
-#             letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
-            
-#             # Fetch reviews and details for the selected similar movie
-#             reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_full_url)
-
-
-#             print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n "+letterboxd_full_url +"\n"+movie_details)
-#             # Ensure each similar movie has the full URL
-#             for movie in similar_movies:
-#                 movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
-
-#             if reviews:
-#                 sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-#                 generate_word_cloud(reviews)
-#                 create_visualizations(sentiments, polarity_scores, movie_details)
-                
-#                 positive_keywords_json = json.dumps(dict(positive_keywords))
-#                 negative_keywords_json = json.dumps(dict(negative_keywords))
-#                 reviews_json = json.dumps(reviews)
-                
-#                 return redirect(url_for('results', 
-#                                         movie=movie_details['title'],
-#                                         year=movie_details['year'],
-#                                         rating=movie_details['rating'],
-#                                         genres=movie_details['genres'],
-#                                         plot=movie_details['plot'],
-#                                         actors=movie_details['actor'],
-#                                         poster=movie_details['poster'],
-#                                         language=movie_details['language'],
-#                                         country=movie_details['country'],
-#                                         writer=movie_details['writer'],
-#                                         awards=movie_details['awards'],
-#                                         director=movie_details['director'],
-#                                         box_office=movie_details['box_office'],
-#                                         release_date=movie_details['release_date'],
-#                                         positive=len(positive_reviews),
-#                                         neutral=len(neutral_reviews),
-#                                         negative=len(negative_reviews),
-#                                         total=len(reviews),
-#                                         rev=reviews_json,
-#                                         positive_keywords=positive_keywords_json,
-#                                         negative_keywords=negative_keywords_json,
-#                                         similar_movies=json.dumps(similar_movies)
-#                                        ))
-#             else:
-#                 # If no reviews for the similar movie, render error
-#                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-
-#     # Render the homepage with trending movies (if no POST request)
-#     return render_template('index.html', trending_movies=trending_movies)
-
+    Returns None if no reviews were found.
+    """
+    letterboxd_url = movie_name.replace(" ", "-").lower()
+    letterboxd_full_url = f"https://letterboxd.com/film/{letterboxd_url}/"
+    reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_name, letterboxd_full_url)
+    if not reviews:
+        return None
+    return _perform_full_analysis(reviews, movie_details, similar_movies)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # Fetch the trending movies
-    trending_movies = fetch_trending_movies()
-
-    
-    #################################### UN-COMMENT THIS TO GET THE REALTIME TRENDING MOVIES #############################################
-    # if not trending_movies:
-    #     trending_movies = FALLBACK_TRENDING
-
-    if  trending_movies:
-        trending_movies = FALLBACK_TRENDING
-
-
+    """Unified index route (search + similar movie follow-up)."""
+    trending_movies = _select_trending_movies()
     if request.method == 'POST':
-        # Get movie name or similar movie name from form
-        movie_name = request.form.get('letterboxd_url')  # Movie name input from the form
-
-        # If it's a search or similar movie click
-        if movie_name:  # Either a search or a click on similar movie
-
-
-            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"+ movie_name)
-            # Format the movie title for the URL (make lowercase and replace spaces with dashes)
-            letterboxd_url = movie_name.replace(' ', '-').lower()
-            letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
-
-            # Fetch reviews and details for the movie (either from search or from similar movie click)
-            reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(movie_name, letterboxd_full_url)
-
-            # Ensure each similar movie has the correct URL
-            # for movie in similar_movies:
-            #     movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
-
-            if reviews:
-                # Perform sentiment analysis
-                sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-                generate_word_cloud(reviews)
-                create_visualizations(sentiments, polarity_scores, movie_details)
-                
-                # Convert keywords to JSON
-                positive_keywords_json = json.dumps(dict(positive_keywords))
-                negative_keywords_json = json.dumps(dict(negative_keywords))
-                reviews_json = json.dumps(reviews)
-                
-                # Redirect to the results page with movie data and sentiment analysis results
-                return redirect(url_for('results', 
-                                        movie=movie_details['title'],
-                                        year=movie_details['year'],
-                                        rating=movie_details['rating'],
-                                        genres=movie_details['genres'],
-                                        plot=movie_details['plot'],
-                                        actors=movie_details['actor'],
-                                        poster=movie_details['poster'],
-                                        language=movie_details['language'],
-                                        country=movie_details['country'],
-                                        writer=movie_details['writer'],
-                                        awards=movie_details['awards'],
-                                        director=movie_details['director'],
-                                        box_office=movie_details['box_office'],
-                                        release_date=movie_details['release_date'],
-                                        positive=len(positive_reviews),
-                                        # positive_reviews = positive_reviews,
-                                        neutral=len(neutral_reviews),
-                                        negative=len(negative_reviews),
-                                        total=len(reviews),
-                                        rev=reviews_json,
-                                        positive_keywords=positive_keywords_json,
-                                        negative_keywords=negative_keywords_json,
-                                        similar_movies=json.dumps(similar_movies)
-                                       ))
-            else:
-                # In case no reviews are found for the movie
+        movie_name = request.form.get('letterboxd_url', '').strip()
+        if movie_name:
+            params = _fetch_and_analyze(movie_name)
+            if params is None:
                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-
-    else:
-        # Handle the case for initial page load (GET request)
-        letterboxd_url = request.args.get('letterboxd_url')
-        if letterboxd_url:
-            # Handle the URL of a similar movie
-            letterboxd_url = letterboxd_url.replace(' ', '-').lower()
-            letterboxd_full_url = f'https://letterboxd.com/film/{letterboxd_url}/'
-            
-            # Fetch reviews and details for the selected similar movie
-            reviews, movie_details, similar_movies = fetch_movie_reviews_and_details(letterboxd_url, letterboxd_full_url)
-
-            # Ensure each similar movie has the full URL
-            for movie in similar_movies:
-                movie['url'] = f'https://letterboxd.com/film/{movie["link"]}/'
-
-            if reviews:
-                # Sentiment analysis and word cloud generation
-                sentiments, positive_reviews, neutral_reviews, negative_reviews, polarity_scores, positive_keywords, negative_keywords = analyze_sentiment(reviews)
-                generate_word_cloud(reviews)
-                create_visualizations(sentiments, polarity_scores, movie_details)
-                
-                # Convert keywords to JSON
-                positive_keywords_json = json.dumps(dict(positive_keywords))
-                negative_keywords_json = json.dumps(dict(negative_keywords))
-                reviews_json = json.dumps(reviews)
-                
-                # Redirect to the results page
-                return redirect(url_for('results', 
-                                        movie=movie_details['title'],
-                                        year=movie_details['year'],
-                                        rating=movie_details['rating'],
-                                        genres=movie_details['genres'],
-                                        plot=movie_details['plot'],
-                                        actors=movie_details['actor'],
-                                        poster=movie_details['poster'],
-                                        language=movie_details['language'],
-                                        country=movie_details['country'],
-                                        writer=movie_details['writer'],
-                                        awards=movie_details['awards'],
-                                        director=movie_details['director'],
-                                        box_office=movie_details['box_office'],
-                                        release_date=movie_details['release_date'],
-                                        positive=len(positive_reviews),
-                                        neutral=len(neutral_reviews),
-                                        negative=len(negative_reviews),
-                                        total=len(reviews),
-                                        rev=reviews_json,
-                                        # positive_reviews = positive_reviews,
-                                        positive_keywords=positive_keywords_json,
-                                        negative_keywords=negative_keywords_json,
-                                        similar_movies=json.dumps(similar_movies)
-                                       ))
-            else:
-                # If no reviews for the similar movie, show an error
+            # store in cache
+            cache_key = cache_put(params)
+            return redirect(url_for('results_cached', key=cache_key))
+    else:  # GET
+        similar_clicked = request.args.get('letterboxd_url')
+        if similar_clicked:
+            params = _fetch_and_analyze(similar_clicked)
+            if params is None:
                 return render_template('index.html', error="No reviews found for this movie.", trending_movies=trending_movies)
-
-    # Render the homepage with trending movies (if no POST request)
+            return redirect(url_for('results', **params))
     return render_template('index.html', trending_movies=trending_movies)
 
 
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    """Dedicated POST endpoint (AJAX or form) to analyze a movie title.
+
+    Expects form field 'movie_title'. Returns redirect to cached results.
+    """
+    movie_name = request.form.get('movie_title', '').strip()
+    if not movie_name:
+        return redirect(url_for('index'))
+    params = _fetch_and_analyze(movie_name)
+    if params is None:
+        return render_template('index.html', error="No reviews found for this movie.")
+    cache_key = cache_put(params)
+    return redirect(url_for('results_cached', key=cache_key))
+    return render_template('index.html', trending_movies=trending_movies)
+
+
+    # (Removed legacy duplicate index implementation.)
+
+
+
+def _build_youtube_sentiment(movie: str) -> Dict[str, Any]:
+    """Fetch trailer comments and build sentiment visualization JSON objects."""
+    trailer_comments = get_trailer_comments(movie)
+    if trailer_comments:
+        yt_sentiments, *_rest = analyze_sentiment([c['text'] for c in trailer_comments])
+    else:
+        # empty fallback
+        yt_sentiments = {"positive": 0, "neutral": 0, "negative": 0}
+
+    labels = ['Positive', 'Neutral', 'Negative']
+    sizes = [yt_sentiments['positive'], yt_sentiments['neutral'], yt_sentiments['negative']]
+    fig_pie_yt = go.Figure(data=[go.Pie(labels=labels, values=sizes, hoverinfo='label+percent', textinfo='percent')])
+    pie_json_yt = json.dumps(fig_pie_yt, cls=PlotlyJSONEncoder)
+    fig_bar_yt = go.Figure(data=[go.Bar(x=labels, y=sizes, marker=dict(color=['green', 'gray', 'red']))])
+    bar_json_yt = json.dumps(fig_bar_yt, cls=PlotlyJSONEncoder)
+    word_freq_yt = plot_word_frequency([c['text'] for c in trailer_comments], None, {'title': movie}) if trailer_comments else None
+    word_freq_json_yt = json.dumps(word_freq_yt, cls=PlotlyJSONEncoder) if word_freq_yt else None
+    return {
+        "pie_chart_yt": pie_json_yt,
+        "bar_chart_yt": bar_json_yt,
+        "word_freq_plot_yt": word_freq_json_yt,
+    }
+
 
 @app.route('/results')
-def results():
+def results():  # backward compatibility (legacy query param path)
     try:
-        movie = request.args.get('movie')
+        # Basic scalar params
+        movie = request.args.get('movie', '')
         year = request.args.get('year')
         rating = request.args.get('rating')
         plot = request.args.get('plot')
@@ -590,138 +256,175 @@ def results():
         genres = request.args.get('genres')
         box_office = request.args.get('box_office')
         release_date = request.args.get('release_date')
-        
-        positive = int(request.args.get('positive'))
-        neutral = int(request.args.get('neutral'))
-        negative = int(request.args.get('negative'))
-        total = int(request.args.get('total'))
         actors = request.args.get('actors')
 
-        positive_keywords = json.loads(request.args.get('positive_keywords'))
-        negative_keywords = json.loads(request.args.get('negative_keywords'))
+        positive = int(request.args.get('positive', 0))
+        neutral = int(request.args.get('neutral', 0))
+        negative = int(request.args.get('negative', 0))
+        total = int(request.args.get('total', 0))
 
-        positive_keywords = [(word, count) for word, count in positive_keywords.items()]
-        negative_keywords = [(word, count) for word, count in negative_keywords.items()]
+        vader_positive = int(request.args.get('vader_positive', 0))
+        vader_neutral = int(request.args.get('vader_neutral', 0))
+        vader_negative = int(request.args.get('vader_negative', 0))
 
-        similar_movies = json.loads(request.args.get('similar_movies'))
+        positive_keywords = json.loads(request.args.get('positive_keywords', '{}'))
+        negative_keywords = json.loads(request.args.get('negative_keywords', '{}'))
+        positive_keywords = list(positive_keywords.items())
+        negative_keywords = list(negative_keywords.items())
 
-         # Generate word frequency plot
-        # reviews = request.args.get('rev').split(';')  # You should pass the reviews as a string
-        reviews = json.loads(request.args.get('rev'))
-        sentiment = request.args.get('sentiment')  # Pass the sentiment (positive, negative, etc.)
+        similar_movies = json.loads(request.args.get('similar_movies', '[]'))
+        reviews = json.loads(request.args.get('rev', '[]'))
 
-        print(".....")
-        print(genres)
+        # Build YouTube charts
+        yt_payload = _build_youtube_sentiment(movie) if movie else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
 
+        # Genre distribution
+        genre_fig = plot_genre_distribution(genres) if genres else None
+        genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder) if genre_fig else None
 
-########################################### FOR YOUTUBE ###############################################
+        # Word frequency for reviews (overall)
+        word_freq_plot_html = plot_word_frequency(reviews, None, {"title": movie}) if reviews else None
+        word_freq_plot_json = json.dumps(word_freq_plot_html, cls=PlotlyJSONEncoder) if word_freq_plot_html else None
 
-  # 1. YouTube Trailer Comments
-        print("ENTERED YOUTUBE")
-        trailer_comments = get_trailer_comments(movie)
-        # Make sure each comment is being passed as a string
-        # print("YOUTUBE TRAILER COMMENTS: \n",[comment['text'] for comment in trailer_comments])
-
-        # 2. Sentiment analysis of YouTube comments
-        if trailer_comments:
-            yt_sentiments, yt_positive, yt_neutral, yt_negative, yt_polarity_scores, yt_positive_keywords, yt_negative_keywords = analyze_sentiment([comment['text'] for comment in trailer_comments])
-        else:
-            yt_sentiments = yt_positive = yt_neutral = yt_negative = yt_polarity_scores = yt_positive_keywords = yt_negative_keywords = []
-
-        print("YOUTUBE POSITIVE",yt_sentiments)
-        print(yt_sentiments['positive'])
-        print(yt_negative)
-        print(yt_neutral)
-        # 3. Generate visualizations for trailer comments (pie chart, bar chart)
-        # Pie chart for sentiment distribution
-
-        sentiment_counts = {'positive': yt_sentiments['positive'], 'neutral': yt_sentiments['neutral'], 'negative': yt_sentiments['negative']}
-        yt_labels = ['Positive', 'Neutral', 'Negative']
-        sizes = [yt_sentiments['positive'], yt_sentiments['neutral'], yt_sentiments['negative']]
-
-        # fig_pie_yt = px.pie(names=list(sentiment_counts.keys()), values=list(sentiment_counts.values()), title=f"Sentiment Distribution for Trailer Comments of {movie}")
-        # fig_pie_yt = go.Figure()
-        fig_pie_yt = go.Figure(data=[go.Pie(labels=yt_labels, values=sizes, hoverinfo='label+percent', textinfo='percent')])
-
-        pie_json_yt = json.dumps(fig_pie_yt, cls=PlotlyJSONEncoder)
-
-        # Bar chart for polarity scores
-        # fig_bar_yt = px.bar(x=['positive', 'neutral', 'negative'], y=[len(yt_positive), len(yt_neutral), len(yt_negative)], title=f"Sentiment Breakdown for Trailer Comments of {movie}")
-        
-        fig_bar_yt = go.Figure(data=[go.Bar(x=yt_labels, y=sizes, marker=dict(color=['green', 'gray', 'red']))])
-        
-        bar_json_yt = json.dumps(fig_bar_yt, cls=PlotlyJSONEncoder)
-
-        # Generate word frequency plot for YouTube comments
-        word_freq_yt = plot_word_frequency([comment['text'] for comment in trailer_comments], sentiment, {'title': movie})
-        word_freq_json_yt = json.dumps(word_freq_yt, cls=PlotlyJSONEncoder)
-
-
-########################################################################################################
-        #Genre Distribution
-        plt_genre = plot_genre_distribution(genres)
-        # print(plt_genre)
-
-        genre_fig = plot_genre_distribution(genres)
-    
-    # Convert the Plotly figure to JSON to pass to the frontend
-        genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder)
-
-
-        # Create the word frequency plot
-        word_freq_plot_html = plot_word_frequency(reviews, sentiment,{'title':movie})
-        word_freq_plot_json = json.dumps(word_freq_plot_html,cls=PlotlyJSONEncoder)
-
-        print("POSITIVE",positive)
-        # Get visualizations
         fig_pie, fig_bar, fig_hist = create_visualizations(
-            {'positive': positive, 'neutral': neutral, 'negative': negative}, 
-            [positive, neutral, negative],  # Example polarity scores
-            {'title': movie}
+            {"positive": positive, "neutral": neutral, "negative": negative},
+            [positive, neutral, negative],
+            {"title": movie},
         )
-        
         pie_json = json.dumps(fig_pie, cls=PlotlyJSONEncoder)
         bar_json = json.dumps(fig_bar, cls=PlotlyJSONEncoder)
         hist_json = json.dumps(fig_hist, cls=PlotlyJSONEncoder)
-        
-        return render_template('results.html', 
-                               movie=movie, 
-                               plot=plot,
-                               actors=actors,
-                               director=director,
-                               poster=poster,
-                               language=language,
-                               country=country,
-                               writer=writer,
-                               awards=awards,
-                               year=year,
-                               rating=rating,
-                               genres=genres,
-                               box_office=box_office,
-                               release_date=release_date,
-                               positive=positive, 
-                               neutral=neutral, 
-                               negative=negative, 
-                               total=total,
-                               positive_keywords=positive_keywords,
-                               negative_keywords=negative_keywords,
-                               similar_movies=similar_movies,
-                               pie_chart=pie_json,
-                               bar_chart=bar_json,
-                               hist_chart=hist_json,
-                               word_freq_plot=word_freq_plot_json,
-                               genre_plot_json=genre_plot_json,
-                                pie_chart_yt=pie_json_yt,
-                               bar_chart_yt=bar_json_yt,
-                               word_freq_plot_yt=word_freq_json_yt)
 
-    except Exception as e:
-        print(f"Error in results route: {str(e)}")
+        summary = generate_summary(movie, plot, {"positive": positive, "neutral": neutral, "negative": negative}) if movie else None
+
+        return render_template(
+            'results.html',
+            movie=movie,
+            plot=plot,
+            actors=actors,
+            director=director,
+            poster=poster,
+            language=language,
+            country=country,
+            writer=writer,
+            awards=awards,
+            year=year,
+            rating=rating,
+            genres=genres,
+            box_office=box_office,
+            release_date=release_date,
+            positive=positive,
+            neutral=neutral,
+            negative=negative,
+            total=total,
+            vader_positive=vader_positive,
+            vader_neutral=vader_neutral,
+            vader_negative=vader_negative,
+            positive_keywords=positive_keywords,
+            negative_keywords=negative_keywords,
+            similar_movies=similar_movies,
+            pie_chart=pie_json,
+            bar_chart=bar_json,
+            hist_chart=hist_json,
+            word_freq_plot=word_freq_plot_json,
+            genre_plot_json=genre_plot_json,
+            **yt_payload,
+            summary=summary,
+        )
+    except Exception as e:  # pragma: no cover - defensive
         return render_template('error.html', error=str(e))
 
 
+@app.route('/results/<key>')
+def results_cached(key: str):  # noqa: C901
+    data = cache_get(key)
+    if not data:
+        abort(404)
+    try:
+        # Extract what we stored originally
+        movie = data.get('movie')
+        plot = data.get('plot')
+        year = data.get('year')
+        rating = data.get('rating')
+        genres = data.get('genres')
+        director = data.get('director')
+        actors = data.get('actors')
+        poster = data.get('poster')
+        language = data.get('language')
+        country = data.get('country')
+        writer = data.get('writer')
+        awards = data.get('awards')
+        box_office = data.get('box_office')
+        release_date = data.get('release_date')
+        positive = data.get('positive', 0)
+        neutral = data.get('neutral', 0)
+        negative = data.get('negative', 0)
+        total = data.get('total', 0)
+        vader_positive = data.get('vader_positive', 0)
+        vader_neutral = data.get('vader_neutral', 0)
+        vader_negative = data.get('vader_negative', 0)
+        reviews = json.loads(data.get('rev', '[]')) if isinstance(data.get('rev'), str) else data.get('rev', [])
+        positive_keywords = list(json.loads(data.get('positive_keywords', '{}')).items()) if isinstance(data.get('positive_keywords'), str) else data.get('positive_keywords', [])
+        negative_keywords = list(json.loads(data.get('negative_keywords', '{}')).items()) if isinstance(data.get('negative_keywords'), str) else data.get('negative_keywords', [])
+        similar_movies = json.loads(data.get('similar_movies', '[]')) if isinstance(data.get('similar_movies'), str) else data.get('similar_movies', [])
 
-OMDB_API_KEY = '36650a58'
+        # Rebuild charts on demand (lightweight) rather than storing them
+        fig_pie, fig_bar, fig_hist = create_visualizations(
+            {"positive": positive, "neutral": neutral, "negative": negative},
+            [positive, neutral, negative],
+            {"title": movie},
+        )
+        pie_json = json.dumps(fig_pie, cls=PlotlyJSONEncoder)
+        bar_json = json.dumps(fig_bar, cls=PlotlyJSONEncoder)
+        hist_json = json.dumps(fig_hist, cls=PlotlyJSONEncoder)
+        genre_plot_json = None
+        if genres:
+            genre_fig = plot_genre_distribution(genres)
+            genre_plot_json = json.dumps(genre_fig, cls=PlotlyJSONEncoder)
+        word_freq_plot_json = None
+        if reviews:
+            wf = plot_word_frequency(reviews, None, {"title": movie})
+            word_freq_plot_json = json.dumps(wf, cls=PlotlyJSONEncoder)
+        yt_payload = _build_youtube_sentiment(movie) if movie else {"pie_chart_yt": None, "bar_chart_yt": None, "word_freq_plot_yt": None}
+        summary = generate_summary(movie, plot, {"positive": positive, "neutral": neutral, "negative": negative}) if movie else None
+
+        return render_template(
+            'results.html',
+            movie=movie,
+            plot=plot,
+            actors=actors,
+            director=director,
+            poster=poster,
+            language=language,
+            country=country,
+            writer=writer,
+            awards=awards,
+            year=year,
+            rating=rating,
+            genres=genres,
+            box_office=box_office,
+            release_date=release_date,
+            positive=positive,
+            neutral=neutral,
+            negative=negative,
+            total=total,
+            vader_positive=vader_positive,
+            vader_neutral=vader_neutral,
+            vader_negative=vader_negative,
+            positive_keywords=positive_keywords,
+            negative_keywords=negative_keywords,
+            similar_movies=similar_movies,
+            pie_chart=pie_json,
+            bar_chart=bar_json,
+            hist_chart=hist_json,
+            word_freq_plot=word_freq_plot_json,
+            genre_plot_json=genre_plot_json,
+            **yt_payload,
+            summary=summary,
+        )
+    except Exception as e:  # pragma: no cover
+        return render_template('error.html', error=str(e))
+
 
 
 @app.route('/get_movie_suggestions', methods=['GET'])
@@ -747,4 +450,4 @@ def get_movie_suggestions():
     return jsonify(suggestions=[])
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=FLASK_DEBUG)
