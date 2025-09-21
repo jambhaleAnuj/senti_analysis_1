@@ -1,6 +1,6 @@
 Flask==2.3.3
 beautifulsoup4==4.12.3
-requests==2.31.0
+requests
 textblob==0.17.1
 matplotlib==3.8.4
 seaborn==0.13.2

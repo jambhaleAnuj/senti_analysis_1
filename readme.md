@@ -38,13 +38,11 @@ This project was originally built for a college assignment and has been upgraded
 
 ## 📊 Sample Screens
 
-| Home                                 | Results 1                                    | Results 2                                    |
-| ------------------------------------ | -------------------------------------------- | -------------------------------------------- |
-| ![Home](/screenshots/HomeScreen.png) | ![Results 1](/screenshots/ResultScreen1.png) | ![Results 2](/screenshots/ResultScreen2.png) |
-
-| Results 3                                    | Results 4                                    |
-| -------------------------------------------- | -------------------------------------------- |
-| ![Results 3](/screenshots/ResultScreen3.png) | ![Results 4](/screenshots/ResultScreen4.png) |
+![Home](/screenshots/HomeScreen.png)
+![Results 1](/screenshots/ResultScreen1.png)
+![Results 2](/screenshots/ResultScreen2.png)
+![Results 3](/screenshots/ResultScreen3.png)  
+![Results 4](/screenshots/ResultScreen4.png)
 
 ## 🧱 Architecture
 
@@ -121,8 +119,6 @@ black .
 ## 🌐 SEO & Discoverability
 
 Relevant keywords included: Movie Sentiment Analysis, Flask NLP, YouTube Comments Sentiment, Rotten Tomatoes reviews, Letterboxd scraping, Plotly dashboard, TextBlob sentiment, Python movie analytics, genre visualization, pre-release vs post-release audience mood.
-
-Add topics on GitHub: `sentiment-analysis` `nlp` `flask` `movie` `plotly` `textblob` `nltk` `web-scraping` `python` `dashboard`
 
 ## 🔐 Environment Variables
 

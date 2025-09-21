@@ -34,4 +34,4 @@ __snapshots__/
 venv/
 __pycache__/
 .venv
-.env
+
