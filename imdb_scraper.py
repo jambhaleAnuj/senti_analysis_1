@@ -8,56 +8,68 @@ from config import OMDB_API_KEY, TMDB_BEARER
 HTML_PARSER = 'html.parser'
 
 def fetch_similar_movies(letterboxd_url):
-    similar_movies = []
+    """Attempt to fetch similar films from Letterboxd, with fallbacks.
 
-    try:
-        similar_url = f"{letterboxd_url}/similar"
-        headers = {
-            'User-Agent': (
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/91.0.4472.124 Safari/537.36'
-            )
-        }
+    Tries related paths and parses poster grid; falls back to trending
+    when nothing is found to avoid an empty UI block.
+    """
+    from imdb_scraper import fetch_trending_movies  # local import to avoid cycle
 
-        response = requests.get(similar_url, headers=headers)
-        soup = BeautifulSoup(response.text, HTML_PARSER)
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/124.0 Safari/537.36'
+        )
+    }
 
-        similar_grid = soup.find('ul', class_='poster-list')
-        if similar_grid:
-            movie_items = similar_grid.find_all('li', class_='poster-container')
+    candidates = [
+        f"{letterboxd_url.rstrip('/')}/related",
+        f"{letterboxd_url.rstrip('/')}/similar",
+    ]
+    collected: list[dict] = []
 
-            for item in movie_items[:6]:
+    for url in candidates:
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                continue
+            soup = BeautifulSoup(resp.text, HTML_PARSER)
+            grid = soup.find('ul', class_='poster-list')
+            if not grid:
+                continue
+            items = grid.find_all('li', class_='poster-container')
+            for item in items[:6]:
                 try:
                     film_poster = item.find('div', class_='film-poster')
-                    if film_poster:
-                        movie_title = film_poster.find('img')['alt']
-                        _movie_url = film_poster['data-target-link']
-
-                        omdb_url = f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
-                        omdb_response = requests.get(omdb_url)
-                        omdb_data = omdb_response.json()
-
-                        poster_url = omdb_data.get('Poster', 'N/A')
-                        if poster_url == 'N/A':
-                            poster_url = "path/to/default/poster.jpg"
-
-                        search_url = f"/{movie_title.replace(' ','-')}"
-
-                        similar_movies.append({
-                            'title': movie_title,
-                            'url': search_url,
-                            'poster': poster_url,
-                        })
-
-                except Exception as e:
-                    print(f"Error processing similar movie: {e}")
+                    if not film_poster:
+                        continue
+                    movie_title = film_poster.find('img')['alt']
+                    omdb_url = (
+                        f"http://www.omdbapi.com/?t={movie_title}&apikey={OMDB_API_KEY}"
+                    )
+                    omdb_response = requests.get(omdb_url, timeout=10)
+                    omdb_data = omdb_response.json() if omdb_response.ok else {}
+                    poster_url = omdb_data.get('Poster') or ""
+                    if not poster_url or poster_url == 'N/A':
+                        poster_url = "https://placehold.co/300x450?text=No+Poster"
+                    search_url = f"/{movie_title.replace(' ', '-')}"
+                    collected.append({
+                        'title': movie_title,
+                        'url': search_url,
+                        'poster': poster_url,
+                    })
+                except Exception:
                     continue
+            if collected:
+                break
+        except Exception:
+            continue
 
-    except Exception as e:
-        print(f"Error fetching similar movies: {e}")
-
-    return similar_movies
+    if not collected:
+        # Fallback to trending tiles to keep UI populated
+        return fetch_trending_movies()[:6]
+    return collected
 
 def get_omdb_data(movie_title):
     """Fetches data from OMDb API."""
@@ -66,30 +78,61 @@ def get_omdb_data(movie_title):
     return response.json()
 
 def fetch_letterboxd_reviews(letterboxd_url):
-    """Fetches multiple pages of reviews from Letterboxd review pages."""
+    """Fetch multiple pages of reviews from a Letterboxd film page.
+
+    Uses a real UA header, corrects the URL, and tries several selectors to
+    adapt to minor DOM changes. Stops early when pages are empty.
+    """
+    headers = {
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/124.0 Safari/537.36'
+        )
+    }
     base_url = letterboxd_url.rstrip('/')
-    review_texts = []
+    review_texts: list[str] = []
 
-    # Try to fetch reviews from up to 10 pages
-    for page in range(1, 8):  # You can change 11 to any desired page count limit
-        paged_url = f"{base_url}//reviews/by/activity/page/{page}/"
-        print(f"Fetching: {paged_url}")
-        response = requests.get(paged_url)
-        if response.status_code != 200:
-            print(f"Page {page} failed to load.")
+    def extract_reviews(soup: BeautifulSoup) -> list[str]:
+        # Try a few different selectors that have appeared on Letterboxd
+        selectors = [
+            ('div', {'class': 'body-text'}),
+            ('div', {'class': 'review'}),
+            ('div', {'class': 'js-review-text'}),
+            ('div', {'class': 'body-text -prose js-review-text'}),
+        ]
+        texts: list[str] = []
+        for name, attrs in selectors:
+            for el in soup.find_all(name, attrs=attrs):
+                text = el.get_text(strip=True)
+                if text and len(text) > 20:  # avoid tiny snippets
+                    texts.append(text)
+            if texts:
+                break
+        return texts
+
+    # Try up to 6 pages
+    for page in range(1, 7):
+        paged_url = f"{base_url}/reviews/by/activity/page/{page}/"
+        try:
+            resp = requests.get(paged_url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                break
+            soup = BeautifulSoup(resp.content, HTML_PARSER)
+            texts = extract_reviews(soup)
+            if not texts:
+                # Try the vanilla reviews path once on first page
+                if page == 1:
+                    alt = f"{base_url}/reviews/"
+                    resp2 = requests.get(alt, headers=headers, timeout=10)
+                    if resp2.ok:
+                        soup2 = BeautifulSoup(resp2.content, HTML_PARSER)
+                        texts = extract_reviews(soup2)
+                if not texts:
+                    break
+            review_texts.extend(texts)
+        except Exception:
             break
-
-        soup = BeautifulSoup(response.content, HTML_PARSER)
-        reviews = soup.find_all('div', class_='body-text -prose js-review-body js-collapsible-text')
-
-        if not reviews:
-            # No more reviews found, stop paginating
-            print(f"No reviews found on page {page}, stopping.")
-            break
-
-        for review in reviews:
-            review_text = review.get_text(strip=True)
-            review_texts.append(review_text)
 
     return review_texts
 
